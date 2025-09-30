@@ -1,0 +1,127 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: newchat-postgres
+    environment:
+      POSTGRES_DB: newchat
+      POSTGRES_USER: newchat_user
+      POSTGRES_PASSWORD: newchat_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U newchat_user -d newchat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: newchat-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Service
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: newchat-backend
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql://newchat_user:newchat_password@postgres:5432/newchat
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - FRONTEND_URL=http://localhost:3000
+      - SECRET_KEY=dev-secret-key-change-in-production
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-key}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-your-aws-key}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-your-aws-secret}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-newchat-dev-bucket}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+      - backend_data:/app/data
+      - backend_logs:/app/logs
+      - backend_venv:/app/.venv  # UV virtual environment cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Frontend Service (for production)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: newchat-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Celery Worker (for background tasks)
+  celery-worker:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: newchat-celery-worker
+    command: celery -A app.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://newchat_user:newchat_password@postgres:5432/newchat
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-key}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-your-aws-key}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-your-aws-secret}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-newchat-dev-bucket}
+    volumes:
+      - ../backend:/app
+      - backend_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_data:
+  backend_logs:
+  backend_venv:
+
+networks:
+  default:
+    name: newchat-network

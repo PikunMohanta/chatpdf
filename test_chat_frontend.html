@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .messages { border: 1px solid #ccc; height: 300px; overflow-y: auto; padding: 10px; margin: 10px 0; }
+        .message { margin: 5px 0; padding: 5px; }
+        .user { background-color: #e3f2fd; }
+        .ai { background-color: #f3e5f5; }
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 10px; }
+        button { padding: 10px 20px; }
+        .loading { color: #666; font-style: italic; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simple Chat Test</h1>
+        <div id="messages" class="messages"></div>
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Ask a question..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        let messageId = 1;
+
+        function addMessage(text, sender, isLoading = false) {
+            const messages = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `<strong>${sender.toUpperCase()}:</strong> ${text}`;
+            if (isLoading) {
+                messageDiv.id = 'loading-message';
+                messageDiv.className += ' loading';
+            }
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+            return messageDiv;
+        }
+
+        function setStatus(text, isError = false) {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.className = isError ? 'error' : '';
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const messageText = input.value.trim();
+            
+            if (!messageText) return;
+
+            // Add user message
+            addMessage(messageText, 'user');
+            input.value = '';
+
+            // Add loading message
+            const loadingMsg = addMessage('Thinking...', 'ai', true);
+            setStatus('Sending request...');
+
+            try {
+                const response = await fetch('http://localhost:8000/api/chat/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer dev-token'
+                    },
+                    body: JSON.stringify({
+                        text: messageText,
+                        document_id: 'test-doc'
+                    })
+                });
+
+                setStatus(`Response status: ${response.status}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Full response:', data);
+
+                // Remove loading message
+                loadingMsg.remove();
+
+                // Add AI response
+                if (data.response) {
+                    addMessage(data.response, 'ai');
+                    setStatus('Success!');
+                } else {
+                    addMessage('No response received', 'ai');
+                    setStatus('No response in data');
+                }
+
+            } catch (error) {
+                loadingMsg.remove();
+                addMessage(`Error: ${error.message}`, 'ai');
+                setStatus(`Error: ${error.message}`, true);
+                console.error('Chat error:', error);
+            }
+        }
+
+        // Allow Enter key to send message
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Test server connectivity on load
+        window.onload = function() {
+            setStatus('Testing server connection...');
+            fetch('http://localhost:8000/health')
+                .then(response => response.json())
+                .then(data => {
+                    setStatus(`Server connected: ${data.status}`);
+                })
+                .catch(error => {
+                    setStatus(`Server connection failed: ${error.message}`, true);
+                });
+        };
+    </script>
+</body>
+</html>

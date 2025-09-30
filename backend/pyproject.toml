@@ -1,0 +1,21 @@
+# UV Configuration for Newchat Backend
+# This file contains UV-specific settings for Python 3.13.7
+
+[tool.uv]
+# Index configuration
+index-url = "https://pypi.org/simple"
+extra-index-url = []
+
+# Cache configuration
+cache-dir = ".uv-cache"
+
+# Build settings
+compile-bytecode = true
+preview = false
+
+[tool.uv.pip]
+# Use pre-built wheels when available
+index-strategy = "first-index"
+keyring-provider = "disabled"
+resolution = "highest"
+prerelease = "disallow"

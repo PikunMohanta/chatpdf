@@ -1,0 +1,68 @@
+# Development docker-compose for local development
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: newchat-dev-postgres
+    environment:
+      POSTGRES_DB: newchat
+      POSTGRES_USER: newchat_user
+      POSTGRES_PASSWORD: newchat_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U newchat_user -d newchat"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: newchat-dev-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PGAdmin (for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: newchat-dev-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@newchat.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+  # Redis Commander (for Redis management)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: newchat-dev-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
+volumes:
+  postgres_dev_data:
+  redis_dev_data:
+
+networks:
+  default:
+    name: newchat-dev-network
