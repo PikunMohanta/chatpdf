@@ -82,35 +82,49 @@ except Exception as e:
     logger.warning(f"S3 client not available - using local storage for development: {e}")
 
 # Initialize OpenAI embeddings - check OpenRouter key first, fallback to OpenAI
-try:
-    openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    
-    if openrouter_api_key:
-        # Use OpenRouter for embeddings (they proxy OpenAI's embedding models)
-        embeddings = OpenAIEmbeddings(
-            openai_api_key=openrouter_api_key,
-            openai_api_base="https://openrouter.ai/api/v1",
-            model="text-embedding-ada-002"
-        )
-        EMBEDDINGS_ENABLED = True
-    elif openai_api_key:
-        # Fallback to direct OpenAI API
-        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        EMBEDDINGS_ENABLED = True
-    else:
+if LANGCHAIN_OPENAI_AVAILABLE:
+    try:
+        openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        
+        if openrouter_api_key:
+            # Use OpenRouter for embeddings (they proxy OpenAI's embedding models)
+            embeddings = OpenAIEmbeddings(
+                openai_api_key=openrouter_api_key,
+                base_url="https://openrouter.ai/api/v1",
+                model="text-embedding-ada-002"
+            )
+            EMBEDDINGS_ENABLED = True
+            logger.info("OpenAI embeddings initialized with OpenRouter")
+        elif openai_api_key:
+            # Fallback to direct OpenAI API
+            embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+            EMBEDDINGS_ENABLED = True
+            logger.info("OpenAI embeddings initialized")
+        else:
+            embeddings = None
+            EMBEDDINGS_ENABLED = False
+            logger.warning("No API keys found - using mock embeddings")
+    except Exception as e:
         embeddings = None
         EMBEDDINGS_ENABLED = False
-except Exception as e:
+        logger.warning(f"OpenAI embeddings not available - using mock mode for development: {e}")
+else:
     embeddings = None
     EMBEDDINGS_ENABLED = False
-    logger.warning(f"OpenAI embeddings not available - using mock mode for development: {e}")
+    logger.warning("langchain_openai not available - using mock embeddings for local development")
 
 # Initialize ChromaDB client only if available
-try:
-    chroma_client = chromadb.PersistentClient(path="./data/chromadb")
-    CHROMADB_ENABLED = True
-except ImportError:
+if CHROMADB_AVAILABLE:
+    try:
+        chroma_client = chromadb.PersistentClient(path="./data/chromadb")
+        CHROMADB_ENABLED = True
+        logger.info("ChromaDB initialized successfully")
+    except Exception as e:
+        chroma_client = None
+        CHROMADB_ENABLED = False
+        logger.warning(f"ChromaDB initialization failed: {e}")
+else:
     chroma_client = None
     CHROMADB_ENABLED = False
     logger.warning("ChromaDB not available - using mock storage for development")
@@ -380,6 +394,48 @@ async def download_document(
     except Exception as e:
         logger.error(f"Error generating download URL: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate download URL")
+
+@router.get("/document/{document_id}/preview")
+async def preview_document(
+    document_id: str,
+    current_user: UserInfo = Depends(verify_token)
+):
+    """
+    Serve PDF file for preview in browser
+    """
+    try:
+        s3_key = f"documents/{current_user.user_id}/{document_id}.pdf"
+        
+        if not S3_ENABLED:
+            # For local development - serve file directly
+            local_storage_dir = Path("./data/uploads")
+            local_file_name = s3_key.replace("/", "_")
+            local_file_path = local_storage_dir / local_file_name
+            
+            if not local_file_path.exists():
+                raise HTTPException(status_code=404, detail="Document not found")
+            
+            return FileResponse(
+                path=str(local_file_path),
+                media_type='application/pdf',
+                filename=f"{document_id}.pdf"
+            )
+        
+        # S3 mode - redirect to presigned URL
+        url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': S3_BUCKET, 'Key': s3_key},
+            ExpiresIn=3600  # 1 hour
+        )
+        
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url=url)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error previewing document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load document preview")
 
 @router.get("/files/{filename}")
 async def serve_local_file(
