@@ -30,20 +30,37 @@ const ChatComponent = ({ documentId }: ChatComponentProps) => {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
+    if (!documentId) {
+      console.warn('No document ID provided to ChatComponent')
+      return
+    }
+
+    console.log('Initializing Socket.IO connection...')
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:8000'
+    
+    const newSocket = io(socketUrl, {
       transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
     })
 
     newSocket.on('connect', () => {
-      console.log('Connected to chat server')
+      console.log('✅ Connected to chat server, socket ID:', newSocket.id)
+    })
+
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error)
     })
 
     newSocket.on('response', (data: { message: string }) => {
+      console.log('📥 Received response:', data)
       setIsTyping(false)
       addMessage(data.message, 'ai')
     })
 
     newSocket.on('error', (error: { message: string }) => {
+      console.error('❌ Socket error:', error)
       setIsTyping(false)
       addMessage(`Error: ${error.message}`, 'ai')
     })
@@ -51,9 +68,10 @@ const ChatComponent = ({ documentId }: ChatComponentProps) => {
     setSocket(newSocket)
 
     return () => {
+      console.log('Disconnecting socket...')
       newSocket.close()
     }
-  }, [])
+  }, [documentId])
 
   // Load chat history
   useEffect(() => {

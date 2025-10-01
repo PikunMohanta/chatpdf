@@ -88,7 +88,7 @@ def get_openrouter_client() -> Optional[OpenRouterClient]:
 def is_openrouter_enabled() -> bool:
     """Check if OpenRouter is configured and available"""
     client = get_openrouter_client()
-    return client is not None and client.is_available()
+    return client is not None  # Just check if client exists, don't test API availability here
 
 def generate_response(messages: List[Dict[str, str]]) -> str:
     """
@@ -97,10 +97,17 @@ def generate_response(messages: List[Dict[str, str]]) -> str:
     client = get_openrouter_client()
     
     if client:
+        logger.info("Attempting to generate response with OpenRouter...")
         response = client.chat_completion(messages)
         if response:
+            logger.info(f"OpenRouter response generated successfully (length: {len(response)} chars)")
             return response
+        else:
+            logger.error("OpenRouter returned None - API call failed")
+    else:
+        logger.warning("OpenRouter client not available - API key not configured")
     
     # Fallback to mock response
     user_message = messages[-1]["content"] if messages else "Hello"
-    return f"Mock response: I received your message '{user_message}'. This is a development response since OpenRouter is not configured."
+    logger.info("Using fallback mock response")
+    return f"Mock response: I received your message '{user_message[:100]}...'. This is a development response since OpenRouter API call failed or is not configured."

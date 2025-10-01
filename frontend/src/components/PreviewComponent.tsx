@@ -17,12 +17,20 @@ const PreviewComponent = ({ documentId }: PreviewComponentProps) => {
   const [pageNumber, setPageNumber] = useState<number>(1)
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
-  const [pdfData, setPdfData] = useState<ArrayBuffer | null>(null)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   // Fetch PDF with authentication
   useEffect(() => {
     const fetchPDF = async () => {
+      if (!documentId) {
+        setError('No document ID provided')
+        setLoading(false)
+        return
+      }
+
       try {
+        setLoading(true)
+        setError(null)
         const token = localStorage.getItem('auth_token') || 'dev-token'
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL}/api/document/${documentId}/preview`,
@@ -30,19 +38,41 @@ const PreviewComponent = ({ documentId }: PreviewComponentProps) => {
             headers: {
               Authorization: `Bearer ${token}`,
             },
-            responseType: 'arraybuffer',
+            responseType: 'blob', // Use blob instead of arraybuffer
+            timeout: 30000, // 30 second timeout
           }
         )
-        setPdfData(response.data)
+        
+        // Create object URL from blob (prevents detachment issues)
+        const url = URL.createObjectURL(response.data)
+        setPdfUrl(url)
+        setLoading(false)
       } catch (err) {
         console.error('Error fetching PDF:', err)
-        setError('Failed to load PDF. Please try again.')
+        if (axios.isAxiosError(err)) {
+          if (err.code === 'ECONNABORTED') {
+            setError('Request timeout. Please try again.')
+          } else if (err.response?.status === 404) {
+            setError('PDF not found. Please try uploading again.')
+          } else {
+            setError(`Failed to load PDF: ${err.response?.data?.detail || err.message}`)
+          }
+        } else {
+          setError('Failed to load PDF. Please try again.')
+        }
         setLoading(false)
       }
     }
 
     if (documentId) {
       fetchPDF()
+    }
+
+    // Cleanup: revoke object URL when component unmounts or document changes
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl)
+      }
     }
   }, [documentId])
 
@@ -92,10 +122,10 @@ const PreviewComponent = ({ documentId }: PreviewComponentProps) => {
           </div>
         )}
 
-        {!error && pdfData && (
+        {!error && pdfUrl && (
           <div className="pdf-viewer">
             <Document
-              file={{ data: pdfData }}
+              file={pdfUrl}
               onLoadSuccess={onDocumentLoadSuccess}
               onLoadError={onDocumentLoadError}
               loading={null}

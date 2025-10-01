@@ -53,9 +53,15 @@ const UploadComponent = ({ onUploadSuccess }: UploadComponentProps) => {
       )
 
       if (response.data) {
-        onUploadSuccess(response.data)
+        // Small delay to show 100% completion
+        setTimeout(() => {
+          setUploading(false)
+          setProgress(0)
+          onUploadSuccess(response.data)
+        }, 500)
       }
     } catch (err) {
+      console.error('Upload error:', err)
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.detail || 'Upload failed. Please try again.')
       } else {
