@@ -1,0 +1,74 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "🎯 Enterprise Agentic Workflow v2.0"
+    }
+  ],
+  "settings": {
+    // 🤖 GitHub Copilot Configuration
+    "github.copilot.enable": {
+      "*": true,
+      "markdown": true,
+      "yaml": true,
+      "json": true,
+      "shellscript": true
+    },
+    
+
+    // 🖥️ Terminal Configuration
+    "terminal.integrated.defaultProfile.windows": "Git Bash",
+    "terminal.integrated.enablePersistentSessions": true,
+    "terminal.integrated.persistentSessionReviveProcess": "onExit",
+    "terminal.integrated.shellIntegration.enabled": true,
+    "terminal.integrated.shellIntegration.showWelcome": true,
+    "terminal.integrated.shellIntegration.decorationsEnabled": "both",
+    "terminal.integrated.shellIntegration.history": 100,
+    "terminal.integrated.profiles.windows": {
+      "Git Bash": {
+        "path": "C:\\Program Files\\Git\\bin\\bash.exe",
+        "args": [
+          "--login"
+        ],
+        "env": {
+          "TERM": "xterm-256color",
+          "CODING_PILOT_WORKSPACE": "${workspaceFolder}"
+        }
+      }
+    },
+    
+    // 📁 File Management
+    "files.exclude": {
+      "copilot-coding-extension": true,
+      "setup": true,
+      "agents": false
+    },
+    
+    // 📁 File Associations for Modular Architecture
+    "files.associations": {
+      "*.prompt": "plaintext",
+      "*.yaml": "yaml",
+      "*.yml": "yaml",
+      "agent_config.yaml": "yaml",
+      "workflow_config.yaml": "yaml",
+      "environment.yaml": "yaml",
+      "agent_registry.yaml": "yaml",
+      "component_repo_map.txt": "plaintext"
+    },
+    
+    // � Basic Editor Settings
+    "editor.wordWrap": "on",
+    "markdown.preview.openMarkdownLinks": "inPreview",
+    "workbench.editor.autoLockGroups": {
+      "workbench.editors.gettingStartedInput": true
+    }
+  },
+  
+  // 🎯 Essential Extensions Only
+  "extensions": {
+    "recommendations": [
+      "github.copilot",
+      "github.copilot-chat"
+    ]
+  }
+}

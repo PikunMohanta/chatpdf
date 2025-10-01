@@ -15,7 +15,7 @@ A full-stack AI-powered PDF ingestion, parsing, and interactive chat application
 
 ## Tech Stack
 
-- **Frontend**: React, Tailwind CSS, Socket.io-client
+- **Frontend**: React 18 + TypeScript, CSS, Socket.io-client, React-PDF, Vite
 - **Backend**: FastAPI, LangChain, PyMuPDF, ChromaDB
 - **Package Manager**: UV (10-100x faster than pip)
 - **Storage**: AWS S3, PostgreSQL/RDS
