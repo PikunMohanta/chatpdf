@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+.uv-cache/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Test files (temporary)
+test_*.py
+test_*.html
+test_*.js
+
+# Temporary documentation files
+*_STATUS.md
+*_FIX*.md
+*_SUMMARY.md
+CURRENT_STATUS.md
+
+# Node/Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+dist/
+build/
+
+# Data directories
+data/uploads/*
+data/chromadb/*
+!data/uploads/.gitkeep
+!data/chromadb/.gitkeep
+
+# Docker
+*.log
+
+# OS
+Thumbs.db
