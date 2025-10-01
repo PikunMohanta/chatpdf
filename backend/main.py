@@ -21,10 +21,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Initialize Socket.IO
+# Initialize Socket.IO with permissive CORS for development
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins="*"
+    cors_allowed_origins='*',  # Allow all origins for development
+    logger=True,
+    engineio_logger=True
 )
 
 # Combine FastAPI and Socket.IO
@@ -33,7 +35,12 @@ socket_app = socketio.ASGIApp(sio, app)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -53,7 +60,7 @@ from app.chat import router as chat_router
 
 # Include routers
 app.include_router(auth_router, prefix="/api/auth", tags=["authentication"])
-app.include_router(pdf_router, prefix="/api/pdf", tags=["pdf"])
+app.include_router(pdf_router, prefix="/api", tags=["pdf"])
 app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
 
 # Health check endpoint
@@ -92,6 +99,39 @@ async def leave_room(sid, data):
     room = data.get('room')
     if room:
         await sio.leave_room(sid, room)
+
+@sio.event
+async def query(sid, data):
+    """
+    Handle chat query from client via Socket.IO
+    """
+    try:
+        document_id = data.get('document_id')
+        query_text = data.get('query')
+        
+        logger.info(f"Received query from {sid}: {query_text[:100]}... for document {document_id}")
+        
+        if not query_text or not document_id:
+            await sio.emit('error', {'message': 'Missing query or document_id'}, room=sid)
+            return
+        
+        # Import the AI response generator
+        from app.chat import generate_ai_response
+        
+        # Generate AI response
+        response_text, sources = await generate_ai_response(query_text, document_id)
+        
+        logger.info(f"Generated response for {sid}: {response_text[:100]}...")
+        
+        # Send response back to client
+        await sio.emit('response', {
+            'message': response_text,
+            'sources': sources
+        }, room=sid)
+        
+    except Exception as e:
+        logger.error(f"Error processing query from {sid}: {e}", exc_info=True)
+        await sio.emit('error', {'message': f'Error processing query: {str(e)}'}, room=sid)
 
 # WebSocket endpoint for real-time chat
 @app.websocket("/ws/{client_id}")

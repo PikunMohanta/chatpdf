@@ -49,6 +49,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh  # Unix
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
+
+# CRITICAL: Must use 'socket_app' for Socket.IO chat to work!
+uv run uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
 ```
 
 3. **Frontend Setup**:
@@ -61,18 +64,28 @@ npm install
 Create `.env` files in both frontend and backend directories (see `.env.example` files)
 
 5. **Start Development**:
-```bash
-# Terminal 1: Backend
+```powershell
+# Terminal 1: Backend (MUST use socket_app for chat!)
 cd backend
-uvicorn main:app --reload
+uv run uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
 
 # Terminal 2: Frontend  
 cd frontend
-npm start
+npm run dev
+# Or if PowerShell blocks npm: cmd /c "npm run dev"
 
-# Terminal 3: Local services (optional)
-docker-compose up -d
+# Frontend will be available at http://localhost:3000
+# Backend API at http://localhost:8000
+# API Docs at http://localhost:8000/docs
 ```
+
+### Development Mode
+The app runs in **mock mode** for local development without AWS credentials:
+- ✅ Local file storage instead of S3
+- ✅ Mock embeddings instead of OpenAI
+- ✅ JSON-based storage instead of ChromaDB
+- ✅ Dev token authentication (`dev-token`)
+- ✅ No AWS/external services required!
 
 ## Project Structure
 

@@ -85,32 +85,35 @@ except Exception as e:
     logger.warning(f"OpenRouter client initialization failed - using mock responses: {e}")
 
 # Initialize ChromaDB client only if available AND embeddings are enabled
-try:
-    from dotenv import load_dotenv
-    load_dotenv()  # Ensure environment variables are loaded
-    
-    chroma_client = chromadb.PersistentClient(path="./data/chromadb")
-    # Check if we can actually create embeddings (need OpenAI/OpenRouter for embeddings)
-    EMBEDDINGS_AVAILABLE = False
+if CHROMADB_AVAILABLE:
     try:
-        from langchain_openai import OpenAIEmbeddings
-        import os
-        openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
-        openai_api_key = os.getenv("OPENAI_API_KEY")
-        logger.info(f"Checking embeddings availability: OpenRouter key = {'Yes' if openrouter_api_key else 'No'}, OpenAI key = {'Yes' if openai_api_key else 'No'}")
-        if openrouter_api_key and openrouter_api_key != "your-openrouter-api-key":
-            EMBEDDINGS_AVAILABLE = True
-        elif openai_api_key and openai_api_key != "your-openai-api-key":
-            EMBEDDINGS_AVAILABLE = True
+        from dotenv import load_dotenv
+        load_dotenv()  # Ensure environment variables are loaded
+        
+        chroma_client = chromadb.PersistentClient(path="./data/chromadb")
+        # Check if we can actually create embeddings (need OpenAI/OpenRouter for embeddings)
+        EMBEDDINGS_AVAILABLE = False
+        try:
+            from langchain_openai import OpenAIEmbeddings
+            import os
+            openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+            openai_api_key = os.getenv("OPENAI_API_KEY")
+            logger.info(f"Checking embeddings availability: OpenRouter key = {'Yes' if openrouter_api_key else 'No'}, OpenAI key = {'Yes' if openai_api_key else 'No'}")
+            if openrouter_api_key and openrouter_api_key != "your-openrouter-api-key":
+                EMBEDDINGS_AVAILABLE = True
+            elif openai_api_key and openai_api_key != "your-openai-api-key":
+                EMBEDDINGS_AVAILABLE = True
+        except Exception as e:
+            logger.warning(f"Error checking embeddings availability: {e}")
+        
+        CHROMADB_ENABLED = EMBEDDINGS_AVAILABLE
+        if not EMBEDDINGS_AVAILABLE:
+            logger.info("ChromaDB available but embeddings not configured - using mock embeddings")
     except Exception as e:
-        logger.warning(f"Error checking embeddings availability: {e}")
-    
-    CHROMADB_ENABLED = EMBEDDINGS_AVAILABLE
-    if not EMBEDDINGS_AVAILABLE:
-        logger.info("ChromaDB available but embeddings not configured - using mock embeddings")
-    else:
-        logger.info("ChromaDB and embeddings both available - using real ChromaDB")
-except ImportError:
+        chroma_client = None
+        CHROMADB_ENABLED = False
+        logger.warning(f"ChromaDB initialization failed: {e}")
+else:
     chroma_client = None
     CHROMADB_ENABLED = False
     EMBEDDINGS_AVAILABLE = False
