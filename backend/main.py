@@ -21,37 +21,28 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Get configuration from environment
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
-ALLOWED_ORIGINS = [
-    FRONTEND_URL,
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-]
-
-# In production, don't allow all origins
-if DEBUG:
-    ALLOWED_ORIGINS.append("*")
-
 # Configure CORS BEFORE Socket.IO initialization
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://127.0.0.1:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "*"  # Allow all origins for Socket.IO in development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize Socket.IO with environment-based configuration
+# Initialize Socket.IO with permissive CORS for development
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*' if DEBUG else ALLOWED_ORIGINS,
-    logger=DEBUG,
-    engineio_logger=DEBUG,
-    always_connect=True  # Accept all connections (authentication can be added later)
+    cors_allowed_origins='*',  # Allow all origins for development
+    logger=True,
+    engineio_logger=True,
+    always_connect=True  # Allow connections without authentication for development
 )
 
 # Combine FastAPI and Socket.IO
@@ -183,14 +174,10 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         logger.info(f"Client {client_id} disconnected from WebSocket")
 
 if __name__ == "__main__":
-    # Get host and port from environment
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
-    
     uvicorn.run(
-        "main:socket_app",  # CRITICAL: Must be socket_app for Socket.IO to work!
-        host=host,
-        port=port,
-        reload=DEBUG,
-        log_level="debug" if DEBUG else "info"
+        "main:socket_app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
     )

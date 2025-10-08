@@ -84,22 +84,104 @@
 .session-info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.session-name {
-  font-size: 0.875rem;
+.session-name-container {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  margin-bottom: 2px;
+}
+
+.session-chat-name {
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: var(--spacing-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  margin: 0;
+}
+
+.edit-name-button {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.session-name-container:hover .edit-name-button {
+  opacity: 1;
+}
+
+.edit-name-button:hover {
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+}
+
+.session-name-edit {
+  margin-bottom: 2px;
+}
+
+.session-name-input {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  border: 2px solid var(--primary-color);
+  border-radius: var(--radius-sm);
+  background: white;
+  outline: none;
+  font-family: inherit;
+}
+
+.session-metadata {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pdf-icon {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.session-document-name {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  font-weight: 500;
 }
 
 .session-date {
   font-size: 0.75rem;
   color: var(--text-secondary);
-  margin-bottom: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+}
+
+.session-date::before {
+  content: '📅';
+  font-size: 0.7rem;
+  opacity: 0.6;
 }
 
 .session-preview {
@@ -108,6 +190,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-style: italic;
+  margin: 0;
 }
 
 .delete-session-button {

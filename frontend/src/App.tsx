@@ -17,6 +17,7 @@ export interface ChatSession {
   session_id: string
   document_id: string
   document_name: string
+  chat_name?: string
   created_at: string
   updated_at: string
   preview_message?: string
@@ -85,6 +86,16 @@ function App() {
     localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
   }
 
+  const handleUpdateChatName = (sessionId: string, newName: string) => {
+    const updatedSessions = chatSessions.map(session => 
+      session.session_id === sessionId 
+        ? { ...session, chat_name: newName, updated_at: new Date().toISOString() }
+        : session
+    )
+    setChatSessions(updatedSessions)
+    localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
+  }
+
   if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />
   }
@@ -103,6 +114,7 @@ function App() {
               onNewChat={handleNewChat}
               onSelectSession={handleSelectSession}
               onDeleteSession={handleDeleteSession}
+              onUpdateChatName={handleUpdateChatName}
             />
           }
         />

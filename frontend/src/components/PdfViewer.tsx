@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { motion } from 'framer-motion'
 import axios from 'axios'
@@ -17,11 +17,13 @@ interface PdfViewerProps {
 
 const PdfViewer = ({ documentId, filename, highlightedPage }: PdfViewerProps) => {
   const [numPages, setNumPages] = useState<number>(0)
-  const [pageNumber, setPageNumber] = useState<number>(1)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [scale, setScale] = useState(1.0)
+  const [pageInputValue, setPageInputValue] = useState<string>('')
+  const pageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const loadPdf = async () => {
@@ -59,8 +61,8 @@ const PdfViewer = ({ documentId, filename, highlightedPage }: PdfViewerProps) =>
   }, [documentId])
 
   useEffect(() => {
-    if (highlightedPage !== null && highlightedPage !== pageNumber) {
-      setPageNumber(highlightedPage)
+    if (highlightedPage !== null) {
+      scrollToPage(highlightedPage)
     }
   }, [highlightedPage])
 
@@ -68,12 +70,20 @@ const PdfViewer = ({ documentId, filename, highlightedPage }: PdfViewerProps) =>
     setNumPages(numPages)
   }
 
-  const goToPrevPage = () => {
-    setPageNumber((prev) => Math.max(1, prev - 1))
+  const scrollToPage = (pageNum: number) => {
+    const pageElement = pageRefs.current[pageNum]
+    if (pageElement && containerRef.current) {
+      pageElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
   }
 
-  const goToNextPage = () => {
-    setPageNumber((prev) => Math.min(numPages, prev + 1))
+  const handlePageInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const pageNum = parseInt(pageInputValue, 10)
+    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= numPages) {
+      scrollToPage(pageNum)
+      setPageInputValue('')
+    }
   }
 
   const zoomIn = () => {
@@ -126,33 +136,34 @@ const PdfViewer = ({ documentId, filename, highlightedPage }: PdfViewerProps) =>
     <div className="pdf-viewer">
       <div className="pdf-toolbar">
         <div className="toolbar-group">
-          <motion.button
-            className="toolbar-button"
-            onClick={goToPrevPage}
-            disabled={pageNumber <= 1}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-            </svg>
-          </motion.button>
-
           <span className="page-info">
-            Page {pageNumber} of {numPages}
+            {numPages} {numPages === 1 ? 'page' : 'pages'}
           </span>
-
-          <motion.button
-            className="toolbar-button"
-            onClick={goToNextPage}
-            disabled={pageNumber >= numPages}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </motion.button>
+          
+          <div className="page-input-container">
+            <form onSubmit={handlePageInputSubmit} className="page-input-form">
+              <input
+                type="number"
+                min="1"
+                max={numPages}
+                placeholder="Go to..."
+                value={pageInputValue}
+                onChange={(e) => setPageInputValue(e.target.value)}
+                className="page-input"
+              />
+              <motion.button
+                type="submit"
+                className="page-go-button"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                disabled={!pageInputValue}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </motion.button>
+            </form>
+          </div>
         </div>
 
         <div className="toolbar-group">
@@ -199,15 +210,26 @@ const PdfViewer = ({ documentId, filename, highlightedPage }: PdfViewerProps) =>
         </div>
       </div>
 
-      <div className="pdf-document-container">
+      <div className="pdf-document-container" ref={containerRef}>
         <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} className="pdf-document">
-          <Page
-            pageNumber={pageNumber}
-            scale={scale}
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
-            className={highlightedPage === pageNumber ? 'page-highlighted' : ''}
-          />
+          {Array.from(new Array(numPages), (_, index) => {
+            const pageNum = index + 1
+            return (
+              <div
+                key={`page_${pageNum}`}
+                ref={(el) => (pageRefs.current[pageNum] = el)}
+                className={`page-wrapper ${highlightedPage === pageNum ? 'page-highlighted' : ''}`}
+              >
+                <div className="page-number-label">Page {pageNum}</div>
+                <Page
+                  pageNumber={pageNum}
+                  scale={scale}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                />
+              </div>
+            )
+          })}
         </Document>
       </div>
 
