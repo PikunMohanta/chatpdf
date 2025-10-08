@@ -53,10 +53,10 @@ const ChatComponent = ({ documentId }: ChatComponentProps) => {
       console.error('❌ Socket connection error:', error)
     })
 
-    newSocket.on('response', (data: { message: string }) => {
+    newSocket.on('response', (data: { response: string; document_id: string; sources?: any[] }) => {
       console.log('📥 Received response:', data)
       setIsTyping(false)
-      addMessage(data.message, 'ai')
+      addMessage(data.response, 'ai')
     })
 
     newSocket.on('error', (error: { message: string }) => {

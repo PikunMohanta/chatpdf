@@ -26,20 +26,29 @@ const ChatPanel = ({ documentId, documentName, onSourceClick }: ChatPanelProps) 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    console.log('🔌 Initializing Socket.IO connection to http://localhost:8000')
+    
     const newSocket = io('http://localhost:8000', {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      timeout: 10000,
     })
 
     newSocket.on('connect', () => {
-      console.log('Socket connected:', newSocket.id)
+      console.log('✅ Socket connected:', newSocket.id)
       setConnected(true)
     })
 
-    newSocket.on('disconnect', () => {
-      console.log('Socket disconnected')
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Socket connection error:', error.message)
+      console.error('Error details:', error)
+      setConnected(false)
+    })
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('🔌 Socket disconnected. Reason:', reason)
       setConnected(false)
     })
 

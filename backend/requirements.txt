@@ -16,7 +16,7 @@ python-dotenv==1.0.1
 langchain==0.3.1
 langchain-community==0.3.1
 langchain-openai==0.2.1
-pymupdf==1.24.10
+pymupdf
 # Using simple approach for Python 3.13 compatibility until full ML ecosystem catches up
 # chromadb==0.4.24  # Uncomment when Python 3.13 wheels are available
 # faiss-cpu==1.8.0  # Uncomment when Python 3.13 wheels are available
@@ -26,7 +26,7 @@ openai==1.51.0
 boto3==1.35.36
 
 # Database dependencies
-psycopg2-binary==2.9.9
+psycopg2-binary
 sqlalchemy==2.0.35
 alembic==1.13.3
 

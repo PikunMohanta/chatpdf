@@ -395,13 +395,14 @@ async def download_document(
         logger.error(f"Error generating download URL: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate download URL")
 
-@router.get("/document/{document_id}/preview")
-async def preview_document(
+@router.get("/pdf/{document_id}")
+async def get_pdf_document(
     document_id: str,
     current_user: UserInfo = Depends(verify_token)
 ):
     """
-    Serve PDF file for preview in browser
+    Get PDF document - serves the file directly for preview
+    This is the main endpoint for PDF retrieval
     """
     try:
         s3_key = f"documents/{current_user.user_id}/{document_id}.pdf"
@@ -434,8 +435,18 @@ async def preview_document(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error previewing document {document_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to load document preview")
+        logger.error(f"Error getting PDF document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load document")
+
+@router.get("/document/{document_id}/preview")
+async def preview_document(
+    document_id: str,
+    current_user: UserInfo = Depends(verify_token)
+):
+    """
+    Serve PDF file for preview in browser (alias for /pdf/{document_id})
+    """
+    return await get_pdf_document(document_id, current_user)
 
 @router.get("/files/{filename}")
 async def serve_local_file(

@@ -1,10 +1,11 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (optional for development)
   postgres:
     image: postgres:15-alpine
-    container_name: newchat-postgres
+    container_name: pdfpal-postgres
+    profiles: ["full"]  # Only start with: docker-compose --profile full up
     environment:
       POSTGRES_DB: newchat
       POSTGRES_USER: newchat_user
@@ -21,10 +22,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis Cache
+  # Redis Cache (optional for development)
   redis:
     image: redis:7-alpine
-    container_name: newchat-redis
+    container_name: pdfpal-redis
+    profiles: ["full"]  # Only start with: docker-compose --profile full up
     ports:
       - "6379:6379"
     volumes:
@@ -38,21 +40,39 @@ services:
   # Backend Service
   backend:
     build:
-      context: ../backend
+      context: ./backend
       dockerfile: ../docker/Dockerfile.backend
-    container_name: newchat-backend
+    container_name: pdfpal-backend
     environment:
-      - DEBUG=True
-      - DATABASE_URL=postgresql://newchat_user:newchat_password@postgres:5432/newchat
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - FRONTEND_URL=http://localhost:3000
-      - SECRET_KEY=dev-secret-key-change-in-production
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-key}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-your-aws-key}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-your-aws-secret}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-newchat-dev-bucket}
+      # Core settings
+      - DEBUG=${DEBUG:-True}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      
+      # AI API Keys
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      
+      # Database (optional for development)
+      - DATABASE_URL=${DATABASE_URL:-postgresql://newchat_user:newchat_password@postgres:5432/newchat}
+      
+      # Redis (optional for development)
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      
+      # AWS (optional for development)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      
+      # AWS Cognito (optional for development)
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
+      - COGNITO_REGION=${COGNITO_REGION:-us-east-1}
     ports:
       - "8000:8000"
     volumes:
@@ -75,9 +95,9 @@ services:
   # Frontend Service (for production)
   frontend:
     build:
-      context: ../frontend
+      context: ./frontend
       dockerfile: ../docker/Dockerfile.frontend
-    container_name: newchat-frontend
+    container_name: pdfpal-frontend
     ports:
       - "80:80"
     depends_on:
@@ -89,12 +109,13 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # Celery Worker (for background tasks)
+  # Celery Worker (for background tasks - optional)
   celery-worker:
     build:
-      context: ../backend
+      context: ./backend
       dockerfile: ../docker/Dockerfile.backend
-    container_name: newchat-celery-worker
+    container_name: pdfpal-celery-worker
+    profiles: ["full"]  # Only start with: docker-compose --profile full up
     command: celery -A app.celery_app worker --loglevel=info
     environment:
       - DATABASE_URL=postgresql://newchat_user:newchat_password@postgres:5432/newchat
@@ -124,4 +145,9 @@ volumes:
 
 networks:
   default:
-    name: newchat-network
+    name: pdfpal-network
+
+# Usage:
+# Development (minimal): docker-compose up -d backend frontend
+# Full stack:            docker-compose --profile full up -d
+# Stop all:              docker-compose down

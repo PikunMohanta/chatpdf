@@ -21,30 +21,41 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Initialize Socket.IO with permissive CORS for development
-sio = socketio.AsyncServer(
-    async_mode='asgi',
-    cors_allowed_origins='*',  # Allow all origins for development
-    logger=True,
-    engineio_logger=True
-)
+# Get configuration from environment
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+ALLOWED_ORIGINS = [
+    FRONTEND_URL,
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+]
 
-# Combine FastAPI and Socket.IO
-socket_app = socketio.ASGIApp(sio, app)
+# In production, don't allow all origins
+if DEBUG:
+    ALLOWED_ORIGINS.append("*")
 
-# Configure CORS
+# Configure CORS BEFORE Socket.IO initialization
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000", 
-        "http://127.0.0.1:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3001"
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Initialize Socket.IO with environment-based configuration
+sio = socketio.AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins='*' if DEBUG else ALLOWED_ORIGINS,
+    logger=DEBUG,
+    engineio_logger=DEBUG,
+    always_connect=True  # Accept all connections (authentication can be added later)
+)
+
+# Combine FastAPI and Socket.IO
+socket_app = socketio.ASGIApp(sio, app)
 
 # Security
 security = HTTPBearer()
@@ -80,8 +91,20 @@ async def root():
 # Socket.IO event handlers
 @sio.event
 async def connect(sid, environ):
-    logger.info(f"Client {sid} connected")
-    await sio.emit('connected', {'message': 'Connected to Newchat'}, room=sid)
+    """
+    Handle new Socket.IO connections
+    For development, we accept all connections without authentication
+    """
+    logger.info(f"✅ Client {sid} connected from {environ.get('REMOTE_ADDR', 'unknown')}")
+    try:
+        await sio.emit('connected', {
+            'message': 'Connected to Newchat',
+            'sid': sid,
+            'status': 'success'
+        }, room=sid)
+    except Exception as e:
+        logger.error(f"Error sending connected event: {e}")
+    return True  # Accept the connection
 
 @sio.event
 async def disconnect(sid):
@@ -109,28 +132,34 @@ async def query(sid, data):
         document_id = data.get('document_id')
         query_text = data.get('query')
         
-        logger.info(f"Received query from {sid}: {query_text[:100]}... for document {document_id}")
+        logger.info(f"📥 Received query from {sid}: {query_text[:50] if query_text else 'None'}... for document {document_id}")
         
         if not query_text or not document_id:
+            logger.warning(f"Missing data - query: {bool(query_text)}, document_id: {bool(document_id)}")
             await sio.emit('error', {'message': 'Missing query or document_id'}, room=sid)
             return
         
         # Import the AI response generator
         from app.chat import generate_ai_response
         
+        # Send typing indicator
+        await sio.emit('typing', {'status': 'ai_typing'}, room=sid)
+        
         # Generate AI response
+        logger.info(f"🤖 Generating AI response for document {document_id}...")
         response_text, sources = await generate_ai_response(query_text, document_id)
         
-        logger.info(f"Generated response for {sid}: {response_text[:100]}...")
+        logger.info(f"✅ Generated response for {sid}: {response_text[:100] if response_text else 'Empty'}...")
         
         # Send response back to client
         await sio.emit('response', {
-            'message': response_text,
+            'response': response_text,
+            'document_id': document_id,
             'sources': sources
         }, room=sid)
         
     except Exception as e:
-        logger.error(f"Error processing query from {sid}: {e}", exc_info=True)
+        logger.error(f"❌ Error processing query from {sid}: {e}", exc_info=True)
         await sio.emit('error', {'message': f'Error processing query: {str(e)}'}, room=sid)
 
 # WebSocket endpoint for real-time chat
@@ -154,10 +183,14 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         logger.info(f"Client {client_id} disconnected from WebSocket")
 
 if __name__ == "__main__":
+    # Get host and port from environment
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    
     uvicorn.run(
-        "main:socket_app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        "main:socket_app",  # CRITICAL: Must be socket_app for Socket.IO to work!
+        host=host,
+        port=port,
+        reload=DEBUG,
+        log_level="debug" if DEBUG else "info"
     )
