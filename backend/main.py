@@ -79,6 +79,33 @@ async def root():
         "docs": "/docs"
     }
 
+# Development endpoint for loading chat history without authentication
+@app.get("/api/chat/history/{session_id}")
+async def get_chat_history_dev(session_id: str):
+    """
+    Get chat history for development (no auth required)
+    """
+    try:
+        from app.chat_history import chat_history_manager
+        
+        session = chat_history_manager.get_session(session_id)
+        
+        if not session:
+            raise HTTPException(status_code=404, detail="Chat session not found")
+        
+        return {
+            "session_id": session.session_id,
+            "document_id": session.document_id,
+            "created_at": session.created_at.isoformat(),
+            "updated_at": session.updated_at.isoformat(),
+            "messages": [msg.to_dict() for msg in session.messages]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving chat history: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve chat history")
+
 # Socket.IO event handlers
 @sio.event
 async def connect(sid, environ):
@@ -122,16 +149,41 @@ async def query(sid, data):
     try:
         document_id = data.get('document_id')
         query_text = data.get('query')
+        session_id = data.get('session_id')
+        user_id = data.get('user_id', 'anonymous')  # Get user_id from client
         
-        logger.info(f"📥 Received query from {sid}: {query_text[:50] if query_text else 'None'}... for document {document_id}")
+        logger.info(f"📥 Received query from {sid}: {query_text[:50] if query_text else 'None'}... for document {document_id}, session {session_id}")
         
         if not query_text or not document_id:
             logger.warning(f"Missing data - query: {bool(query_text)}, document_id: {bool(document_id)}")
             await sio.emit('error', {'message': 'Missing query or document_id'}, room=sid)
             return
         
-        # Import the AI response generator
+        # Import the AI response generator and chat history
         from app.chat import generate_ai_response
+        from app.chat_history import chat_history_manager, ChatMessage
+        import uuid
+        
+        # Get or create chat session
+        session = None
+        if session_id:
+            session = chat_history_manager.get_session(session_id)
+        
+        if not session:
+            # Create new session for this document and user
+            logger.info(f"Creating new chat session for document {document_id}, user {user_id}")
+            session = chat_history_manager.create_session(document_id, user_id)
+            session_id = session.session_id
+        
+        # Save user message to history
+        user_message = ChatMessage(
+            message_id=str(uuid.uuid4()),
+            text=query_text,
+            sender='user',
+            timestamp=datetime.now()
+        )
+        chat_history_manager.add_message_to_session(session_id, user_message)
+        logger.info(f"💾 Saved user message to session {session_id}")
         
         # Send typing indicator
         await sio.emit('typing', {'status': 'ai_typing'}, room=sid)
@@ -142,10 +194,22 @@ async def query(sid, data):
         
         logger.info(f"✅ Generated response for {sid}: {response_text[:100] if response_text else 'Empty'}...")
         
-        # Send response back to client
+        # Save AI response to history
+        ai_message = ChatMessage(
+            message_id=str(uuid.uuid4()),
+            text=response_text,
+            sender='ai',
+            timestamp=datetime.now(),
+            sources=sources
+        )
+        chat_history_manager.add_message_to_session(session_id, ai_message)
+        logger.info(f"💾 Saved AI response to session {session_id}")
+        
+        # Send response back to client with session_id
         await sio.emit('response', {
             'response': response_text,
             'document_id': document_id,
+            'session_id': session_id,
             'sources': sources
         }, room=sid)
         

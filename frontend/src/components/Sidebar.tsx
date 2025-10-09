@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ChatSession } from '../App'
 import './Sidebar.css'
 
@@ -22,6 +22,25 @@ const Sidebar = ({
 }: SidebarProps) => {
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState<string>('')
+  const [menuOpenSessionId, setMenuOpenSessionId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpenSessionId(null)
+      }
+    }
+
+    if (menuOpenSessionId) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [menuOpenSessionId])
 
   const formatDate = (isoString: string) => {
     const date = new Date(isoString)
@@ -61,6 +80,29 @@ const Sidebar = ({
     }
   }
 
+  const toggleMenu = (sessionId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenSessionId(menuOpenSessionId === sessionId ? null : sessionId)
+  }
+
+  const handleMenuAction = (action: string, session: ChatSession, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenSessionId(null)
+    
+    switch (action) {
+      case 'pin':
+        // TODO: Implement pin functionality
+        console.log('Pin session:', session.session_id)
+        break
+      case 'rename':
+        handleStartEdit(session, e)
+        break
+      case 'delete':
+        onDeleteSession(session.session_id)
+        break
+    }
+  }
+
   return (
     <div className="sidebar">
       <motion.button
@@ -77,7 +119,13 @@ const Sidebar = ({
         <h3 className="chat-history-title">Recent Chats</h3>
         <div className="chat-history-list">
           {chatSessions.length === 0 ? (
-            <p className="no-chats">No previous chats</p>
+            <div className="no-chats">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="no-chats-icon">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <p className="no-chats-text">No chat history yet</p>
+              <p className="no-chats-subtext">Upload a PDF to start your first conversation</p>
+            </div>
           ) : (
             chatSessions.map((session) => {
               const isEditing = editingSessionId === session.session_id
@@ -107,18 +155,7 @@ const Sidebar = ({
                         />
                       </div>
                     ) : (
-                      <div className="session-name-container">
-                        <p className="session-chat-name">{displayName}</p>
-                        <button
-                          className="edit-name-button"
-                          onClick={(e) => handleStartEdit(session, e)}
-                          title="Edit chat name"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                      </div>
+                      <p className="session-chat-name">{displayName}</p>
                     )}
                     
                     <div className="session-metadata">
@@ -135,19 +172,65 @@ const Sidebar = ({
                     )}
                   </div>
                   
-                  <motion.button
-                    className="delete-session-button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onDeleteSession(session.session_id)
-                    }}
-                    whileHover={{ scale: 1.2, color: '#ef4444' }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </motion.button>
+                  <div className="session-actions" ref={menuOpenSessionId === session.session_id ? menuRef : null}>
+                    <motion.button
+                      className="menu-button"
+                      onClick={(e) => toggleMenu(session.session_id, e)}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2" />
+                        <circle cx="12" cy="12" r="2" />
+                        <circle cx="12" cy="19" r="2" />
+                      </svg>
+                    </motion.button>
+
+                    <AnimatePresence>
+                      {menuOpenSessionId === session.session_id && (
+                        <motion.div
+                          className="context-menu"
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          transition={{ duration: 0.15 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                        <button
+                          className="context-menu-item"
+                          onClick={(e) => handleMenuAction('pin', session, e)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                          </svg>
+                          Pin
+                        </button>
+                        
+                        <button
+                          className="context-menu-item"
+                          onClick={(e) => handleMenuAction('rename', session, e)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Rename
+                        </button>
+                        
+                        <div className="context-menu-divider" />
+                        
+                        <button
+                          className="context-menu-item danger"
+                          onClick={(e) => handleMenuAction('delete', session, e)}
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Delete
+                        </button>
+                      </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </motion.div>
               )
             })

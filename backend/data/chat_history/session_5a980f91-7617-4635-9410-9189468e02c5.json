@@ -1,0 +1,27 @@
+{
+  "session_id": "5a980f91-7617-4635-9410-9189468e02c5",
+  "document_id": "9e21b95d-213c-40b0-a46c-2c8239e9c61b",
+  "user_id": "anonymous",
+  "created_at": "2025-10-09T23:27:15.722542",
+  "updated_at": "2025-10-09T23:27:18.534992",
+  "messages": [
+    {
+      "message_id": "743fa825-41bf-419b-a7eb-298b2c3392cd",
+      "text": "what is PAC",
+      "sender": "user",
+      "timestamp": "2025-10-09T23:27:15.782364",
+      "sources": []
+    },
+    {
+      "message_id": "25061d94-4544-48fc-8b5a-82f66ba165ff",
+      "text": "According to the document content, PAC stands for:\n\n1. Passive-Aggressive Classifier.\n\nAdditionally, it is described as an online learning method used for binary classification tasks, which dynamically adapts based on prediction outcomes, adjusting its model parameters when errors occur.",
+      "sender": "ai",
+      "timestamp": "2025-10-09T23:27:18.534078",
+      "sources": [
+        "Chunk 1: gressive Classifier (PAC), fine-tuned through various parameters,\nalongside Artificial Neural Networ...",
+        "Chunk 2: E. PAC Model Creation\nThe Passive-Aggressive (PA) Classifier is an online learning\nmethod used for b...",
+        "Chunk 3: digital landscape with confidence, mitigating risks associated\nwith fraudulent websites and bolsteri..."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "sessions": [
+    {
+      "session_id": "128d473b-88ca-4e35-a2b1-b4960bfa6388",
+      "created_at": "2025-10-09T23:26:48.751977",
+      "updated_at": "2025-10-09T23:26:52.652449",
+      "message_count": 2,
+      "last_message_preview": "Based on the document content, this PDF is about a system or approach to detecting and countering mi..."
+    },
+    {
+      "session_id": "5a980f91-7617-4635-9410-9189468e02c5",
+      "created_at": "2025-10-09T23:27:15.722542",
+      "updated_at": "2025-10-09T23:27:18.534992",
+      "message_count": 2,
+      "last_message_preview": "According to the document content, PAC stands for:\n\n1. Passive-Aggressive Classifier.\n\nAdditionally,..."
+    },
+    {
+      "session_id": "1d753a7e-fb05-480b-8f3a-7a5c2ba279d5",
+      "created_at": "2025-10-09T23:28:46.778223",
+      "updated_at": "2025-10-09T23:28:52.935710",
+      "message_count": 2,
+      "last_message_preview": "Based on the document content, the answer to your question is:\n\nNo, the ability to identify fake new..."
+    },
+    {
+      "session_id": "5861b2aa-b951-4a12-bb2b-5aee84c53449",
+      "created_at": "2025-10-09T23:29:15.541078",
+      "updated_at": "2025-10-09T23:29:19.971322",
+      "message_count": 2,
+      "last_message_preview": "I don't see any mention of RAG in the provided document content. The document appears to discuss the..."
+    }
+  ]
+}

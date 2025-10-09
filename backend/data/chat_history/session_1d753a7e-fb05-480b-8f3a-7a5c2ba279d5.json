@@ -1,0 +1,27 @@
+{
+  "session_id": "1d753a7e-fb05-480b-8f3a-7a5c2ba279d5",
+  "document_id": "9e21b95d-213c-40b0-a46c-2c8239e9c61b",
+  "user_id": "anonymous",
+  "created_at": "2025-10-09T23:28:46.778223",
+  "updated_at": "2025-10-09T23:28:52.935710",
+  "messages": [
+    {
+      "message_id": "5dfcc88b-f2e3-49a0-9db7-2df8aca6ebad",
+      "text": "in the recent time with the rise of ai will this able to identify the fake news",
+      "sender": "user",
+      "timestamp": "2025-10-09T23:28:48.401712",
+      "sources": []
+    },
+    {
+      "message_id": "7e3d99da-80d2-4405-bab5-abb7686ef5bf",
+      "text": "Based on the document content, the answer to your question is:\n\nNo, the ability to identify fake news may not be as effective with the rise of AI-generated content. According to the document, \"The quest to identify and mitigate fake news is increasingly challenging due to the dynamic and sophisticated nature of misinformation, especially with the rise of AI-generated content.\"\n\nThis statement suggests that the rise of AI-generated content has made it more difficult to identify fake news, implying that the methods used in this research may not be as effective against this new type of misinformation.",
+      "sender": "ai",
+      "timestamp": "2025-10-09T23:28:52.934705",
+      "sources": [
+        "Chunk 1: from the confusion matrix serve as invaluable feedback for\noptimizing our model and enhancing its pr...",
+        "Chunk 2: digital landscape with confidence, mitigating risks associated\nwith fraudulent websites and bolsteri...",
+        "Chunk 3: E. Findings\nFig. 4. Accuracy Comparison\nIn our study, we have employed a modified Passive Ag-\ngressi..."
+      ]
+    }
+  ]
+}

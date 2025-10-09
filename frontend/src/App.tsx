@@ -34,7 +34,8 @@ function App() {
     const savedSessions = localStorage.getItem('chat_sessions')
     if (savedSessions) {
       try {
-        setChatSessions(JSON.parse(savedSessions))
+        const sessions = JSON.parse(savedSessions)
+        setChatSessions(sessions)
       } catch (e) {
         console.error('Failed to parse chat sessions:', e)
       }
@@ -43,7 +44,21 @@ function App() {
 
   const handleSplashComplete = () => {
     setShowSplash(false)
-    navigate('/upload')
+    
+    // Check if there are existing chat sessions
+    if (chatSessions.length > 0) {
+      // Load the most recent session
+      const mostRecentSession = chatSessions[0]
+      setCurrentDocument({
+        document_id: mostRecentSession.document_id,
+        filename: mostRecentSession.document_name,
+        status: 'processed',
+      })
+      navigate('/chat')
+    } else {
+      // First time user - show upload screen
+      navigate('/upload')
+    }
   }
 
   const handleUploadSuccess = (docInfo: DocumentInfo) => {
@@ -84,6 +99,22 @@ function App() {
     const updatedSessions = chatSessions.filter(s => s.session_id !== sessionId)
     setChatSessions(updatedSessions)
     localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
+    
+    // If the deleted session was the current one and there are other sessions, switch to the first one
+    if (currentDocument?.document_id === sessionId) {
+      if (updatedSessions.length > 0) {
+        const nextSession = updatedSessions[0]
+        setCurrentDocument({
+          document_id: nextSession.document_id,
+          filename: nextSession.document_name,
+          status: 'processed',
+        })
+      } else {
+        // No more sessions, redirect to upload
+        setCurrentDocument(null)
+        navigate('/upload')
+      }
+    }
   }
 
   const handleUpdateChatName = (sessionId: string, newName: string) => {

@@ -14,16 +14,64 @@ interface Message {
 interface ChatPanelProps {
   documentId: string
   documentName: string
+  chatName?: string
+  sessionId?: string
   onSourceClick: (pageNumber: number) => void
+  onGenerateChatName?: (query: string) => void
 }
 
-const ChatPanel = ({ documentId, documentName, onSourceClick }: ChatPanelProps) => {
+const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick, onGenerateChatName }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [socket, setSocket] = useState<Socket | null>(null)
   const [connected, setConnected] = useState(false)
+  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(sessionId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Load chat history when session changes
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      if (!sessionId) {
+        console.log('📄 No session ID, clearing messages')
+        setMessages([])
+        setCurrentSessionId(undefined)
+        return
+      }
+
+      try {
+        console.log('📥 Loading chat history for session:', sessionId)
+        const response = await fetch(`http://localhost:8000/api/chat/history/${sessionId}`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          const loadedMessages: Message[] = data.messages.map((msg: any) => ({
+            id: msg.message_id,
+            text: msg.text,
+            from: msg.sender as 'user' | 'ai',
+            timestamp: new Date(msg.timestamp),
+            sources: msg.sources ? msg.sources.map((s: string) => ({ text: s })) : undefined
+          }))
+          
+          setMessages(loadedMessages)
+          setCurrentSessionId(sessionId)
+          console.log(`✅ Loaded ${loadedMessages.length} messages from history`)
+        } else {
+          console.warn('No chat history found for session:', sessionId)
+          setMessages([])
+          setCurrentSessionId(sessionId)
+        }
+      } catch (error) {
+        console.error('❌ Error loading chat history:', error)
+        setMessages([])
+        setCurrentSessionId(sessionId)
+      }
+    }
+
+    loadChatHistory()
+    setInput('')
+    setIsTyping(false)
+  }, [sessionId])
 
   useEffect(() => {
     console.log('🔌 Initializing Socket.IO connection to http://localhost:8000')
@@ -52,9 +100,14 @@ const ChatPanel = ({ documentId, documentName, onSourceClick }: ChatPanelProps) 
       setConnected(false)
     })
 
-    newSocket.on('response', (data: { response: string; document_id: string }) => {
+    newSocket.on('response', (data: { response: string; document_id: string; session_id?: string }) => {
       console.log('Received response:', data)
       setIsTyping(false)
+
+      // Update session ID if received from server
+      if (data.session_id && !currentSessionId) {
+        setCurrentSessionId(data.session_id)
+      }
 
       setMessages((prev) => [
         ...prev,
@@ -103,13 +156,21 @@ const ChatPanel = ({ documentId, documentName, onSourceClick }: ChatPanelProps) 
       timestamp: new Date(),
     }
 
+    const queryText = input
     setMessages((prev) => [...prev, userMessage])
     setInput('')
     setIsTyping(true)
 
+    // Generate chat name from first message
+    if (messages.length === 0 && onGenerateChatName) {
+      onGenerateChatName(queryText)
+    }
+
     socket.emit('query', {
       document_id: documentId,
-      query: input,
+      query: queryText,
+      session_id: currentSessionId,
+      user_id: 'anonymous', // TODO: Replace with actual user ID from auth
     })
   }
 
@@ -120,11 +181,19 @@ const ChatPanel = ({ documentId, documentName, onSourceClick }: ChatPanelProps) 
     }
   }
 
+  const displayChatName = chatName || `Chat about ${documentName}`
+
   return (
     <div className="chat-panel">
       <div className="chat-header">
         <div className="chat-header-info">
-          <h3 className="chat-title">{documentName}</h3>
+          <h3 className="chat-title">{displayChatName}</h3>
+          <div className="chat-document-info">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="pdf-icon-header">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span className="chat-document-name">{documentName}</span>
+          </div>
           <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
             <span className="status-dot" />
             {connected ? 'Connected' : 'Disconnected'}
@@ -136,6 +205,7 @@ const ChatPanel = ({ documentId, documentName, onSourceClick }: ChatPanelProps) 
         {messages.length === 0 ? (
           <div className="empty-state">
             <motion.div
+              className="empty-state-content"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -150,6 +220,30 @@ const ChatPanel = ({ documentId, documentName, onSourceClick }: ChatPanelProps) 
               </svg>
               <p className="empty-text">Start a conversation</p>
               <p className="empty-subtext">Ask questions about your PDF document</p>
+              
+              {/* Centered Search Bar */}
+              <div className="centered-input-wrapper">
+                <textarea
+                  className="centered-chat-input"
+                  placeholder="Message PDF Pal..."
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  disabled={!connected}
+                  rows={1}
+                />
+                <motion.button
+                  className="centered-send-button"
+                  onClick={handleSendMessage}
+                  disabled={!input.trim() || !connected}
+                  whileHover={input.trim() && connected ? { scale: 1.05 } : {}}
+                  whileTap={input.trim() && connected ? { scale: 0.95 } : {}}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                </motion.button>
+              </div>
             </motion.div>
           </div>
         ) : (
@@ -246,30 +340,33 @@ const ChatPanel = ({ documentId, documentName, onSourceClick }: ChatPanelProps) 
         )}
       </div>
 
-      <div className="chat-input-container">
-        <div className="chat-input-wrapper">
-          <textarea
-            className="chat-input"
-            placeholder="Ask a question about your PDF..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={!connected}
-            rows={1}
-          />
-          <motion.button
-            className="send-button"
-            onClick={handleSendMessage}
-            disabled={!input.trim() || !connected}
-            whileHover={input.trim() && connected ? { scale: 1.05 } : {}}
-            whileTap={input.trim() && connected ? { scale: 0.95 } : {}}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </motion.button>
+      {/* Only show bottom input when messages exist */}
+      {messages.length > 0 && (
+        <div className="chat-input-container">
+          <div className="chat-input-wrapper">
+            <textarea
+              className="chat-input"
+              placeholder="Ask a question about your PDF..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={!connected}
+              rows={1}
+            />
+            <motion.button
+              className="send-button"
+              onClick={handleSendMessage}
+              disabled={!input.trim() || !connected}
+              whileHover={input.trim() && connected ? { scale: 1.05 } : {}}
+              whileTap={input.trim() && connected ? { scale: 0.95 } : {}}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </motion.button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

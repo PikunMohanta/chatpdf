@@ -36,6 +36,28 @@ const ChatWorkspace = ({
     setTimeout(() => setHighlightedPage(null), 3000)
   }
 
+  const generateChatName = (query: string): string => {
+    // Take first 5-6 words from the query
+    const words = query.trim().split(/\s+/)
+    const summary = words.slice(0, 6).join(' ')
+    
+    // Add ellipsis if query was longer
+    return words.length > 6 ? `${summary}...` : summary
+  }
+
+  const handleGenerateChatName = (query: string) => {
+    if (!currentDocument || !onUpdateChatName) return
+    
+    const currentSession = chatSessions.find(s => s.document_id === currentDocument.document_id)
+    if (!currentSession) return
+    
+    // Only generate name if it hasn't been set yet
+    if (!currentSession.chat_name) {
+      const generatedName = generateChatName(query)
+      onUpdateChatName(currentSession.session_id, generatedName)
+    }
+  }
+
   const handleMouseDown = () => {
     setIsResizing(true)
   }
@@ -82,7 +104,21 @@ const ChatWorkspace = ({
   if (!currentDocument) {
     return (
       <div className="chat-workspace no-document">
-        <p>No document selected. Please upload a PDF to start chatting.</p>
+        <div className="no-document-content">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="no-doc-icon">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <h2>No Document Selected</h2>
+          <p>Please select a chat from the sidebar or upload a new PDF to start chatting.</p>
+          <motion.button
+            className="upload-new-button"
+            onClick={onNewChat}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Upload New PDF
+          </motion.button>
+        </div>
       </div>
     )
   }
@@ -136,9 +172,13 @@ const ChatWorkspace = ({
           {/* Chat Panel - Now in the middle */}
           <div className="chat-panel-container" style={{ width: `${100 - pdfWidth}%` }}>
             <ChatPanel
+              key={currentDocument.document_id}
               documentId={currentDocument.document_id}
               documentName={currentDocument.filename}
+              chatName={chatSessions.find(s => s.document_id === currentDocument.document_id)?.chat_name}
+              sessionId={chatSessions.find(s => s.document_id === currentDocument.document_id)?.session_id}
               onSourceClick={handleSourceClick}
+              onGenerateChatName={handleGenerateChatName}
             />
           </div>
 
@@ -158,6 +198,7 @@ const ChatWorkspace = ({
           {/* PDF Viewer - Now on the right with adjustable width */}
           <div className="pdf-viewer-container" style={{ width: `${pdfWidth}%` }}>
             <PdfViewer
+              key={currentDocument.document_id}
               documentId={currentDocument.document_id}
               filename={currentDocument.filename}
               highlightedPage={highlightedPage}
