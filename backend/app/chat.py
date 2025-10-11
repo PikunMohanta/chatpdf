@@ -205,8 +205,8 @@ Answer:"""
         else:
             answer = f"Mock response: Based on the document context, here's what I found about '{question}'. (This is a development response since OpenRouter is not configured.)"
         
-        # Return answer and sources
-        sources = [doc[:100] + "..." for doc in relevant_docs]
+        # Return answer and sources with page numbers
+        sources = [{"page": i+1, "text": doc[:100] + "..."} for i, doc in enumerate(relevant_docs)]
         return answer, sources
         
     except Exception as e:
@@ -247,7 +247,7 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
                                 results = collection.query(query_texts=[question], n_results=3)
                                 if results['documents'] and results['documents'][0]:
                                     context = "\n\n".join(results['documents'][0])
-                                    sources = [doc[:100] + "..." for doc in results['documents'][0]]
+                                    sources = [{"page": i+1, "text": doc[:100] + "..."} for i, doc in enumerate(results['documents'][0])]
                                     logger.info(f"Found {len(results['documents'][0])} relevant chunks from ChromaDB")
                                     use_mock_embeddings = False
                         except Exception as chroma_e:
@@ -292,7 +292,8 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
                         
                         if top_chunks:
                             context = "\n\n".join(top_chunks)
-                            sources = [f"Chunk {i+1}: {chunk[:100]}..." for i, chunk in enumerate(top_chunks)]
+                            # Build sources from top chunks with page numbers
+                            sources = [{"page": i+1, "text": chunk[:100] + "..."} for i, chunk in enumerate(top_chunks)]
                             logger.info(f"Using {len(top_chunks)} relevant chunks for context")
                         else:
                             logger.warning(f"No relevant chunks found for question: {question}")
@@ -300,7 +301,7 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
                             fallback_chunks = mock_data.get('chunks', [])[:2]
                             if fallback_chunks:
                                 context = "\n\n".join(fallback_chunks)
-                                sources = [f"Document excerpt {i+1}: {chunk[:100]}..." for i, chunk in enumerate(fallback_chunks)]
+                                sources = [{"page": i+1, "text": chunk[:100] + "..."} for i, chunk in enumerate(fallback_chunks)]
                                 logger.info(f"Using fallback chunks from document")
                     else:
                         logger.error(f"Mock embeddings file not found: {mock_file}")

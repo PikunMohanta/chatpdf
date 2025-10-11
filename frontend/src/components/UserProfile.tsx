@@ -49,7 +49,7 @@ const UserProfile = () => {
                 />
                 <div className="dropdown-user-info">
                   <p className="dropdown-name">Demo User</p>
-                  <p className="dropdown-email">demo@pdfpal.com</p>
+                  <p className="dropdown-email">demo@pdfpixie.com</p>
                 </div>
               </div>
 

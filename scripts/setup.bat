@@ -1,5 +1,6 @@
 @echo off
-REM Setup script for Newchat develoREM Install UV if not present
+REM Setup script for PDFPixie development environment
+REM Install UV if not present
 where uv >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
     echo Installing UV...
@@ -22,7 +23,7 @@ call .venv\\Scripts\\activate.bat
 uv pip install -r requirements.txtt (Windows)
 REM This script sets up the local development environment
 
-echo 🚀 Setting up Newchat development environment...
+echo 🚀 Setting up PDFPixie development environment...
 
 REM Check if required tools are installed
 echo 📋 Checking requirements...

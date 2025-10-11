@@ -16,7 +16,7 @@ load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Newchat API",
+    title="PDFPixie API",
     description="AI-powered PDF ingestion, parsing, and interactive chat application",
     version="1.0.0"
 )
@@ -73,13 +73,13 @@ app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "newchat-api"}
+    return {"status": "healthy", "service": "pdfpixie-api"}
 
 # Root endpoint
 @app.get("/")
 async def root():
     return {
-        "message": "Welcome to Newchat API",
+        "message": "Welcome to PDFPixie API",
         "version": "1.0.0",
         "docs": "/docs"
     }
@@ -121,7 +121,7 @@ async def connect(sid, environ):
     logger.info(f"✅ Client {sid} connected from {environ.get('REMOTE_ADDR', 'unknown')}")
     try:
         await sio.emit('connected', {
-            'message': 'Connected to Newchat',
+            'message': 'Connected to PDFPixie',
             'sid': sid,
             'status': 'success'
         }, room=sid)

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Setup script for Newchat development environment
+# Setup script for PDFPixie development environment
 # This script sets up the local development environment
 
 set -e
 
-echo "🚀 Setting up Newchat development environment..."
+echo "🚀 Setting up PDFPixie development environment..."
 
 # Check if required tools are installed
 check_requirements() {

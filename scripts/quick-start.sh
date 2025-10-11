@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🚀 Quick start with UV - Starting Newchat development..."
+echo "🚀 Quick start with UV - Starting PDFPixie development..."
 
 # Check if UV is installed
 if ! command -v uv &> /dev/null; then

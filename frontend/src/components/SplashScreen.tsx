@@ -46,7 +46,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           >
             PDF
           </motion.span>
-          {' '}
           <motion.span
             className="app-name-pal"
             animate={{
@@ -58,7 +57,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               ease: 'easeInOut',
             }}
           >
-            Pal
+            Pixie
           </motion.span>
         </motion.h1>
 

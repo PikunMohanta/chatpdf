@@ -20,7 +20,7 @@ class OpenRouterClient:
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "http://localhost:3000",
-            "X-Title": "Newchat PDF Assistant"
+            "X-Title": "PDFPixie Assistant"
         }
     
     def chat_completion(

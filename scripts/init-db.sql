@@ -1,4 +1,4 @@
--- Initialize the database for Newchat application
+-- Initialize the database for PDFPixie application
 
 -- Create the main tables
 CREATE TABLE IF NOT EXISTS users (

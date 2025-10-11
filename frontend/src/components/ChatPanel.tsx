@@ -266,7 +266,7 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
               <div className="centered-input-wrapper">
                 <textarea
                   className="centered-chat-input"
-                  placeholder="Message PDF Pal..."
+                  placeholder="Message PDFPixie..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}

@@ -1,6 +1,7 @@
 {
-  "name": "newchat-frontend",
+  "name": "pdfpixie-frontend",
   "version": "1.0.0",
+  "description": "PDFPixie - Your intelligent PDF document companion",
   "type": "module",
   "scripts": {
     "dev": "vite",

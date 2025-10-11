@@ -147,7 +147,7 @@ const ChatWorkspace = ({
           </svg>
         </motion.button>
 
-        <h1 className="workspace-title">PDF Pal</h1>
+        <h1 className="workspace-title">PDFPixie</h1>
 
         <UserProfile />
       </div>

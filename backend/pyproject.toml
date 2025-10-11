@@ -1,4 +1,4 @@
-# UV Configuration for Newchat Backend
+# UV Configuration for PDFPixie Backend
 # This file contains UV-specific settings for Python 3.13.7
 
 [tool.uv]

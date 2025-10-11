@@ -2,7 +2,7 @@
 REM Quick development start script using UV (Windows)
 REM This script starts the development environment quickly
 
-echo 🚀 Quick start with UV - Starting Newchat development...
+echo 🚀 Quick start with UV - Starting PDFPixie development...
 
 REM Check if UV is installed
 where uv >nul 2>nul

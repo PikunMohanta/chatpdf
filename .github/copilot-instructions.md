@@ -1,14 +1,14 @@
-# Copilot Instructions for Newchat
+# Copilot Instructions for PDFPixie
 
 ## Project Overview
 
-Newchat is a full-stack AI-powered PDF ingestion, parsing, and interactive chat application. Think smart document analyzer with real-time interactions, drag-and-drop features, and seamless AI responses.
+PDFPixie is a full-stack AI-powered PDF ingestion, parsing, and interactive chat application. Think smart document analyzer with real-time interactions, drag-and-drop features, and seamless AI responses. Your intelligent PDF companion.
 
 ## Project Structure
 
 ```
-Newchat/
-├── frontend/          # React + Tailwind CSS UI
+PDFPixie/
+├── frontend/          # React + TypeScript UI
 ├── backend/           # FastAPI async backend
 ├── docker/           # Containerization configs
 ├── k8s/              # Kubernetes YAMLs/Helm charts

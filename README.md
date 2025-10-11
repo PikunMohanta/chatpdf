@@ -1,4 +1,4 @@
-# Newchat - AI-Powered PDF Chat Application
+# PDFPixie - AI-Powered PDF Chat Application
 
 A full-stack AI-powered PDF ingestion, parsing, and interactive chat application. Upload PDFs, ask questions, and get intelligent responses based on document content.
 
@@ -36,7 +36,7 @@ A full-stack AI-powered PDF ingestion, parsing, and interactive chat application
 1. **Clone and setup**:
 ```bash
 git clone <repository-url>
-cd Newchat
+cd pdfpixie
 ```
 
 2. **Backend Setup**:
@@ -91,8 +91,8 @@ The app runs in **mock mode** for local development without AWS credentials:
 ## Project Structure
 
 ```
-Newchat/
-├── frontend/          # React + Tailwind CSS UI
+PDFPixie/
+├── frontend/          # React + TypeScript UI
 ├── backend/           # FastAPI async backend
 ├── docker/           # Containerization configs
 ├── k8s/              # Kubernetes YAMLs/Helm charts
