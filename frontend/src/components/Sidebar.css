@@ -51,7 +51,23 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: 0;
+}
+
+.time-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.time-group-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 var(--spacing-sm) var(--spacing-xs);
+  padding: var(--spacing-sm) 0;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
 }
 
 .no-chats {
@@ -85,7 +101,7 @@
 }
 
 .chat-session-item {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-base);
@@ -93,15 +109,30 @@
   display: flex;
   align-items: flex-start;
   gap: var(--spacing-sm);
+  margin-bottom: 2px;
 }
 
 .chat-session-item:hover {
-  background: var(--bg-secondary);
+  background: #f5f5f5;
 }
 
 .chat-session-item.active {
-  background: var(--primary-light);
-  border-left: 3px solid var(--primary-color);
+  background: #ececec;
+}
+
+.chat-session-item.active .session-chat-name {
+  font-weight: 600;
+}
+
+.session-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
 .session-info {
@@ -109,81 +140,35 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  justify-content: center;
 }
 
 .session-chat-name {
-  font-size: 0.9375rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   margin: 0;
+  line-height: 1.4;
 }
 
 .session-name-edit {
-  margin-bottom: 2px;
+  width: 100%;
 }
 
 .session-name-input {
   width: 100%;
-  padding: 4px 8px;
-  font-size: 0.9375rem;
-  font-weight: 600;
+  padding: 6px 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: var(--text-primary);
   border: 2px solid var(--primary-color);
   border-radius: var(--radius-sm);
   background: white;
   outline: none;
   font-family: inherit;
-}
-
-.session-metadata {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.pdf-icon {
-  flex-shrink: 0;
-  color: var(--text-secondary);
-  opacity: 0.7;
-}
-
-.session-document-name {
-  font-size: 0.8125rem;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin: 0;
-  font-weight: 500;
-}
-
-.session-date {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-}
-
-.session-date::before {
-  content: '📅';
-  font-size: 0.7rem;
-  opacity: 0.6;
-}
-
-.session-preview {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-style: italic;
-  margin: 0;
 }
 
 .session-actions {

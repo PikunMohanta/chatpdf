@@ -55,6 +55,11 @@ security = HTTPBearer()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Initialize database
+from app.database import init_db
+init_db()
+logger.info("Database initialized successfully")
+
 # Import route modules
 from app.auth import router as auth_router
 from app.pdf_processing import router as pdf_router
@@ -86,7 +91,7 @@ async def get_chat_history_dev(session_id: str):
     Get chat history for development (no auth required)
     """
     try:
-        from app.chat_history import chat_history_manager
+        from app.chat_history_db import chat_history_manager
         
         session = chat_history_manager.get_session(session_id)
         
@@ -159,9 +164,9 @@ async def query(sid, data):
             await sio.emit('error', {'message': 'Missing query or document_id'}, room=sid)
             return
         
-        # Import the AI response generator and chat history
+        # Import the AI response generator and chat history (database-backed)
         from app.chat import generate_ai_response
-        from app.chat_history import chat_history_manager, ChatMessage
+        from app.chat_history_db import chat_history_manager, ChatMessage
         import uuid
         
         # Get or create chat session

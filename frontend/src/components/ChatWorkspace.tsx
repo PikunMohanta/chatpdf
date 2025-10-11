@@ -14,6 +14,7 @@ interface ChatWorkspaceProps {
   onSelectSession: (session: ChatSession) => void
   onDeleteSession: (sessionId: string) => void
   onUpdateChatName?: (sessionId: string, newName: string) => void
+  onUpdateSessionId?: (documentId: string, newSessionId: string) => void
 }
 
 const ChatWorkspace = ({
@@ -23,6 +24,7 @@ const ChatWorkspace = ({
   onSelectSession,
   onDeleteSession,
   onUpdateChatName,
+  onUpdateSessionId,
 }: ChatWorkspaceProps) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [highlightedPage, setHighlightedPage] = useState<number | null>(null)
@@ -56,6 +58,13 @@ const ChatWorkspace = ({
       const generatedName = generateChatName(query)
       onUpdateChatName(currentSession.session_id, generatedName)
     }
+  }
+
+  const handleSessionIdReceived = (newSessionId: string) => {
+    if (!currentDocument || !onUpdateSessionId) return
+    
+    console.log('📌 Updating session ID for document', currentDocument.document_id, 'to', newSessionId)
+    onUpdateSessionId(currentDocument.document_id, newSessionId)
   }
 
   const handleMouseDown = () => {
@@ -179,6 +188,7 @@ const ChatWorkspace = ({
               sessionId={chatSessions.find(s => s.document_id === currentDocument.document_id)?.session_id}
               onSourceClick={handleSourceClick}
               onGenerateChatName={handleGenerateChatName}
+              onSessionIdReceived={handleSessionIdReceived}
             />
           </div>
 

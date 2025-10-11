@@ -29,7 +29,7 @@ except ImportError:
     logger.warning("langchain not available - using mock responses for local development")
 
 from .auth import verify_token, UserInfo
-from .chat_history import chat_history_manager, ChatMessage as HistoryChatMessage, ChatSession as HistoryChatSession
+from .chat_history_db import chat_history_manager, ChatMessage as HistoryChatMessage, ChatSession as HistoryChatSession
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -469,11 +469,11 @@ async def get_latest_chat_session(
 
 @router.get("/history/{session_id}", response_model=ChatHistoryResponse)
 async def get_chat_history(
-    session_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    session_id: str
 ):
     """
     Get a specific chat session with full message history
+    NOTE: Authentication disabled for development
     """
     try:
         session = chat_history_manager.get_session(session_id)
@@ -481,9 +481,10 @@ async def get_chat_history(
         if not session:
             raise HTTPException(status_code=404, detail="Chat session not found")
         
-        # Verify user has access to this session
-        if session.user_id != current_user.user_id:
-            raise HTTPException(status_code=403, detail="Access denied to this chat session")
+        # NOTE: User verification disabled for development
+        # In production, uncomment this:
+        # if session.user_id != current_user.user_id:
+        #     raise HTTPException(status_code=403, detail="Access denied to this chat session")
         
         return ChatHistoryResponse(
             session_id=session.session_id,

@@ -18,9 +18,10 @@ interface ChatPanelProps {
   sessionId?: string
   onSourceClick: (pageNumber: number) => void
   onGenerateChatName?: (query: string) => void
+  onSessionIdReceived?: (sessionId: string) => void
 }
 
-const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick, onGenerateChatName }: ChatPanelProps) => {
+const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick, onGenerateChatName, onSessionIdReceived }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -32,19 +33,30 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
   // Load chat history when session changes
   useEffect(() => {
     const loadChatHistory = async () => {
-      if (!sessionId) {
-        console.log('📄 No session ID, clearing messages')
+      console.log('🔄 Session ID changed:', { sessionId, documentId })
+      
+      // Skip if no session ID or if it's a temporary ID
+      if (!sessionId || sessionId.startsWith('temp_')) {
+        console.log('📄 Temporary or no session ID - starting fresh chat')
         setMessages([])
-        setCurrentSessionId(undefined)
+        setCurrentSessionId(sessionId)
         return
       }
 
       try {
-        console.log('📥 Loading chat history for session:', sessionId)
+        console.log('📥 Attempting to load chat history for session:', sessionId)
         const response = await fetch(`http://localhost:8000/api/chat/history/${sessionId}`)
+        
+        console.log('📡 History API response status:', response.status)
         
         if (response.ok) {
           const data = await response.json()
+          console.log('📦 Received data:', { 
+            messageCount: data.messages?.length || 0, 
+            sessionId: data.session_id,
+            documentId: data.document_id 
+          })
+          
           const loadedMessages: Message[] = data.messages.map((msg: any) => ({
             id: msg.message_id,
             text: msg.text,
@@ -55,9 +67,10 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
           
           setMessages(loadedMessages)
           setCurrentSessionId(sessionId)
-          console.log(`✅ Loaded ${loadedMessages.length} messages from history`)
+          console.log(`✅ Successfully loaded ${loadedMessages.length} messages from history`)
         } else {
-          console.warn('No chat history found for session:', sessionId)
+          const errorText = await response.text()
+          console.warn('⚠️ No chat history found:', { sessionId, status: response.status, error: errorText })
           setMessages([])
           setCurrentSessionId(sessionId)
         }
@@ -71,7 +84,7 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
     loadChatHistory()
     setInput('')
     setIsTyping(false)
-  }, [sessionId])
+  }, [sessionId, documentId])
 
   useEffect(() => {
     console.log('🔌 Initializing Socket.IO connection to http://localhost:8000')
@@ -101,12 +114,33 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
     })
 
     newSocket.on('response', (data: { response: string; document_id: string; session_id?: string }) => {
-      console.log('Received response:', data)
+      console.log('📨 Received response from backend:', {
+        hasResponse: !!data.response,
+        sessionId: data.session_id,
+        documentId: data.document_id,
+        currentSessionId
+      })
       setIsTyping(false)
 
       // Update session ID if received from server
-      if (data.session_id && !currentSessionId) {
-        setCurrentSessionId(data.session_id)
+      if (data.session_id) {
+        const needsUpdate = !currentSessionId || currentSessionId.startsWith('temp_')
+        console.log('� Session ID check:', {
+          receivedId: data.session_id,
+          currentId: currentSessionId,
+          needsUpdate
+        })
+        
+        if (needsUpdate) {
+          console.log('📌 Updating session ID from', currentSessionId, 'to', data.session_id)
+          setCurrentSessionId(data.session_id)
+          
+          // Notify parent component to update the session in localStorage
+          if (onSessionIdReceived) {
+            console.log('🔔 Notifying parent of new session ID')
+            onSessionIdReceived(data.session_id)
+          }
+        }
       }
 
       setMessages((prev) => [
@@ -165,6 +199,13 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
     if (messages.length === 0 && onGenerateChatName) {
       onGenerateChatName(queryText)
     }
+
+    console.log('📤 Sending query to backend:', {
+      documentId,
+      sessionId: currentSessionId,
+      queryLength: queryText.length,
+      isFirstMessage: messages.length === 0
+    })
 
     socket.emit('query', {
       document_id: documentId,

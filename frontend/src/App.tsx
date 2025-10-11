@@ -64,9 +64,9 @@ function App() {
   const handleUploadSuccess = (docInfo: DocumentInfo) => {
     setCurrentDocument(docInfo)
     
-    // Create new chat session
+    // Create new chat session (backend will assign real session_id on first message)
     const newSession: ChatSession = {
-      session_id: `session_${Date.now()}`,
+      session_id: `temp_${Date.now()}`, // Temporary ID until backend creates real session
       document_id: docInfo.document_id,
       document_name: docInfo.filename,
       created_at: new Date().toISOString(),
@@ -127,6 +127,26 @@ function App() {
     localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
   }
 
+  const handleUpdateSessionId = (documentId: string, newSessionId: string) => {
+    console.log('📌 App.tsx: Updating session ID for document', documentId, 'to', newSessionId)
+    console.log('📋 Current sessions:', chatSessions.map(s => ({ doc: s.document_id, session: s.session_id })))
+    
+    const updatedSessions = chatSessions.map(session => {
+      if (session.document_id === documentId) {
+        console.log(`✏️  Updating session ${session.session_id} -> ${newSessionId}`)
+        return { ...session, session_id: newSessionId, updated_at: new Date().toISOString() }
+      }
+      return session
+    })
+    
+    console.log('💾 Saving updated sessions to localStorage')
+    setChatSessions(updatedSessions)
+    localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
+    
+    // Verify the update
+    console.log('✅ Sessions after update:', updatedSessions.map(s => ({ doc: s.document_id, session: s.session_id })))
+  }
+
   if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />
   }
@@ -146,6 +166,7 @@ function App() {
               onSelectSession={handleSelectSession}
               onDeleteSession={handleDeleteSession}
               onUpdateChatName={handleUpdateChatName}
+              onUpdateSessionId={handleUpdateSessionId}
             />
           }
         />

@@ -67,6 +67,7 @@ Create `.env` files in both frontend and backend directories (see `.env.example`
 ```powershell
 # Terminal 1: Backend (MUST use socket_app for chat!)
 cd backend
+uvicorn main:socket_app --reload
 uv run uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
 
 # Terminal 2: Frontend  

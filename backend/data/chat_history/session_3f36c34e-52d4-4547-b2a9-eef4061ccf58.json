@@ -1,0 +1,26 @@
+{
+  "session_id": "3f36c34e-52d4-4547-b2a9-eef4061ccf58",
+  "document_id": "9e21b95d-213c-40b0-a46c-2c8239e9c61b",
+  "user_id": "anonymous",
+  "created_at": "2025-10-11T12:33:38.268196",
+  "updated_at": "2025-10-11T12:33:41.683534",
+  "messages": [
+    {
+      "message_id": "f26d0ac7-bf6e-4056-871a-e70ce06521f8",
+      "text": "hii",
+      "sender": "user",
+      "timestamp": "2025-10-11T12:33:38.755840",
+      "sources": []
+    },
+    {
+      "message_id": "35ea6f70-0606-44c0-9e64-99ef7a0b1829",
+      "text": "It seems there is no question provided in the prompt. The provided document content appears to be the header and abstract of a research paper, but there is no actual question related to the content. If you could provide a specific question related to the document, I'll be happy to help you with a detailed answer.",
+      "sender": "ai",
+      "timestamp": "2025-10-11T12:33:41.682928",
+      "sources": [
+        "Document excerpt 1: Fake News Detection Using Passive Aggressive\nClassifier (PAC) & Neural Network: A Hybrid\nApproach\nOm...",
+        "Document excerpt 2: kumarashutosh7917@gmail.com\nArpit Padhy\nComputer Science and Engineering\nC.V. Raman Global Universit..."
+      ]
+    }
+  ]
+}

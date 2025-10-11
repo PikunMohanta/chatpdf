@@ -42,15 +42,34 @@ const Sidebar = ({
     }
   }, [menuOpenSessionId])
 
-  const formatDate = (isoString: string) => {
+  const getTimeGroup = (isoString: string): string => {
     const date = new Date(isoString)
     const now = new Date()
     const diff = now.getTime() - date.getTime()
     const hours = Math.floor(diff / (1000 * 60 * 60))
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
     
     if (hours < 24) return 'Today'
     if (hours < 48) return 'Yesterday'
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    if (days < 7) return 'Previous 7 Days'
+    if (days < 30) return 'Previous 30 Days'
+    
+    // Return month name
+    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  }
+
+  const groupSessionsByTime = () => {
+    const groups: { [key: string]: ChatSession[] } = {}
+    
+    chatSessions.forEach(session => {
+      const group = getTimeGroup(session.created_at)
+      if (!groups[group]) {
+        groups[group] = []
+      }
+      groups[group].push(session)
+    })
+    
+    return groups
   }
 
   const handleStartEdit = (session: ChatSession, e: React.MouseEvent) => {
@@ -116,7 +135,6 @@ const Sidebar = ({
       </motion.button>
 
       <div className="chat-history">
-        <h3 className="chat-history-title">Recent Chats</h3>
         <div className="chat-history-list">
           {chatSessions.length === 0 ? (
             <div className="no-chats">
@@ -127,7 +145,10 @@ const Sidebar = ({
               <p className="no-chats-subtext">Upload a PDF to start your first conversation</p>
             </div>
           ) : (
-            chatSessions.map((session) => {
+            Object.entries(groupSessionsByTime()).map(([timeGroup, sessions]) => (
+              <div key={timeGroup} className="time-group">
+                <h3 className="time-group-title">{timeGroup}</h3>
+                {sessions.map((session) => {
               const isEditing = editingSessionId === session.session_id
               const displayName = session.chat_name || `Chat about ${session.document_name}`
               
@@ -141,6 +162,12 @@ const Sidebar = ({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                 >
+                  <div className="session-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                  </div>
+                  
                   <div className="session-info">
                     {isEditing ? (
                       <div className="session-name-edit" onClick={(e) => e.stopPropagation()}>
@@ -156,19 +183,6 @@ const Sidebar = ({
                       </div>
                     ) : (
                       <p className="session-chat-name">{displayName}</p>
-                    )}
-                    
-                    <div className="session-metadata">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="pdf-icon">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                      <p className="session-document-name">{session.document_name}</p>
-                    </div>
-                    
-                    <p className="session-date">{formatDate(session.created_at)}</p>
-                    
-                    {session.preview_message && (
-                      <p className="session-preview">{session.preview_message}</p>
                     )}
                   </div>
                   
@@ -233,7 +247,9 @@ const Sidebar = ({
                   </div>
                 </motion.div>
               )
-            })
+            })}
+              </div>
+            ))
           )}
         </div>
       </div>

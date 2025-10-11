@@ -27,6 +27,27 @@
       "updated_at": "2025-10-09T23:29:19.971322",
       "message_count": 2,
       "last_message_preview": "I don't see any mention of RAG in the provided document content. The document appears to discuss the..."
+    },
+    {
+      "session_id": "40c3cf4a-61df-4f28-9d32-7c69657527e5",
+      "created_at": "2025-10-11T12:21:15.711131",
+      "updated_at": "2025-10-11T12:21:21.026416",
+      "message_count": 2,
+      "last_message_preview": "Based on the document content, PAC stands for Passive-Aggressive Classifier. It is an online learnin..."
+    },
+    {
+      "session_id": "413b8d70-fe40-4cf4-950e-49d132291e6c",
+      "created_at": "2025-10-11T12:28:11.421856",
+      "updated_at": "2025-10-11T12:28:15.235432",
+      "message_count": 2,
+      "last_message_preview": "Based on the document content, PAC stands for Passive-Aggressive Classifier, which is an online lear..."
+    },
+    {
+      "session_id": "3f36c34e-52d4-4547-b2a9-eef4061ccf58",
+      "created_at": "2025-10-11T12:33:38.268196",
+      "updated_at": "2025-10-11T12:33:41.683534",
+      "message_count": 2,
+      "last_message_preview": "It seems there is no question provided in the prompt. The provided document content appears to be th..."
     }
   ]
 }
