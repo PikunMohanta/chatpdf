@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #messages {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f9f9f9;
+        }
+        .message {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+        .user {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        .ai {
+            background: #f5f5f5;
+            text-align: left;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        input[type="text"] {
+            width: calc(100% - 120px);
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        #sendBtn {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Socket.IO Connection Test</h1>
+        
+        <div id="status" class="status disconnected">
+            ⚪ Disconnected
+        </div>
+
+        <div>
+            <label>Document ID:</label>
+            <input type="text" id="documentId" value="07176a5c-2189-4e4b-a37f-9bdffe3eadfc" style="width: 100%; margin: 10px 0;">
+        </div>
+
+        <div>
+            <input type="text" id="messageInput" placeholder="Type your question..." />
+            <button id="sendBtn" onclick="sendMessage()">Send</button>
+        </div>
+
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="clearMessages()">Clear Messages</button>
+
+        <div id="messages"></div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        let socket = null;
+        const statusEl = document.getElementById('status');
+        const messagesEl = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const documentIdInput = document.getElementById('documentId');
+
+        function addMessage(text, type) {
+            const div = document.createElement('div');
+            div.className = `message ${type}`;
+            div.textContent = text;
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            if (connected) {
+                statusEl.textContent = '✅ Connected';
+                statusEl.className = 'status connected';
+            } else {
+                statusEl.textContent = '❌ Disconnected';
+                statusEl.className = 'status disconnected';
+            }
+        }
+
+        function testConnection() {
+            addMessage('🔌 Attempting to connect to http://localhost:8000...', 'user');
+            
+            if (socket) {
+                socket.close();
+            }
+
+            socket = io('http://localhost:8000', {
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000,
+                timeout: 10000,
+            });
+
+            socket.on('connect', () => {
+                console.log('✅ Connected:', socket.id);
+                updateStatus(true);
+                addMessage(`✅ Connected! Socket ID: ${socket.id}`, 'ai');
+            });
+
+            socket.on('connect_error', (error) => {
+                console.error('❌ Connection error:', error);
+                updateStatus(false);
+                addMessage(`❌ Connection error: ${error.message}`, 'error');
+            });
+
+            socket.on('disconnect', (reason) => {
+                console.log('🔌 Disconnected:', reason);
+                updateStatus(false);
+                addMessage(`🔌 Disconnected: ${reason}`, 'error');
+            });
+
+            socket.on('connected', (data) => {
+                console.log('📨 Server confirmed connection:', data);
+                addMessage(`📨 Server message: ${data.message}`, 'ai');
+            });
+
+            socket.on('response', (data) => {
+                console.log('📨 Received response:', data);
+                addMessage(`🤖 AI: ${data.response}`, 'ai');
+                if (data.sources && data.sources.length > 0) {
+                    addMessage(`📚 Sources: ${data.sources.length} found`, 'ai');
+                }
+            });
+
+            socket.on('error', (error) => {
+                console.error('Socket error:', error);
+                addMessage(`❌ Error: ${error.message}`, 'error');
+            });
+
+            socket.on('typing', (data) => {
+                console.log('⌨️ Typing indicator:', data);
+                if (data.status === 'ai_typing') {
+                    addMessage('⌨️ AI is typing...', 'ai');
+                }
+            });
+        }
+
+        function sendMessage() {
+            if (!socket || !socket.connected) {
+                addMessage('❌ Not connected! Click "Test Connection" first.', 'error');
+                return;
+            }
+
+            const message = messageInput.value.trim();
+            const documentId = documentIdInput.value.trim();
+
+            if (!message) {
+                addMessage('❌ Please enter a message!', 'error');
+                return;
+            }
+
+            if (!documentId) {
+                addMessage('❌ Please enter a document ID!', 'error');
+                return;
+            }
+
+            addMessage(`👤 You: ${message}`, 'user');
+            
+            console.log('📤 Sending query:', { document_id: documentId, query: message });
+            
+            socket.emit('query', {
+                document_id: documentId,
+                query: message,
+                session_id: null,
+                user_id: 'test_user'
+            });
+
+            messageInput.value = '';
+        }
+
+        function clearMessages() {
+            messagesEl.innerHTML = '';
+        }
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Auto-connect on load
+        window.onload = () => {
+            addMessage('👋 Socket.IO Test Page Loaded', 'ai');
+            addMessage('Click "Test Connection" to connect to backend', 'ai');
+        };
+    </script>
+</body>
+</html>

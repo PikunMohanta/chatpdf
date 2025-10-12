@@ -213,10 +213,11 @@ Answer:"""
         logger.error(f"Error querying collection: {e}")
         return "I'm sorry, I encountered an error while processing your question.", []
 
-async def generate_ai_response(question: str, document_id: str) -> tuple[str, List[str]]:
+async def generate_ai_response(question: str, document_id: str) -> tuple[str, List[dict], str]:
     """
     Generate AI response for a question about a specific document
     Uses OpenRouter when available, falls back to mock responses only when needed
+    Returns: (response_text, sources_list, search_mode)
     """
     try:
         # If we have OpenRouter available, use it even with mock embeddings
@@ -226,6 +227,7 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
             # Try to get document context (from mock or real embeddings)
             context = ""
             sources = []
+            search_mode = "keyword"  # Default to keyword search
             
             try:
                 # Always try mock embeddings first when real embeddings aren't available
@@ -248,6 +250,7 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
                                 if results['documents'] and results['documents'][0]:
                                     context = "\n\n".join(results['documents'][0])
                                     sources = [{"page": i+1, "text": doc[:100] + "..."} for i, doc in enumerate(results['documents'][0])]
+                                    search_mode = "semantic"  # Using semantic search via ChromaDB
                                     logger.info(f"Found {len(results['documents'][0])} relevant chunks from ChromaDB")
                                     use_mock_embeddings = False
                         except Exception as chroma_e:
@@ -275,6 +278,7 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
                         logger.info(f"Loaded {total_chunks} chunks from mock embeddings")
                         
                         # Simple keyword matching for mock retrieval
+                        search_mode = "keyword"  # Using keyword-based search
                         relevant_chunks = []
                         question_words = question.lower().split()
                         logger.info(f"Question keywords: {question_words}")
@@ -314,6 +318,14 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
                             logger.error(f"Mock embeddings directory not found: {mock_dir}")
                             logger.info(f"Current working directory: {os.getcwd()}")
                             logger.info(f"Script directory: {current_dir}")
+                        
+                        # Return helpful error message
+                        error_msg = "I apologize, but I couldn't find the document data for this PDF. This could happen if:\n\n"
+                        error_msg += "1. The PDF was just uploaded and hasn't been processed yet\n"
+                        error_msg += "2. The document ID is invalid\n"
+                        error_msg += "3. The document processing failed\n\n"
+                        error_msg += "Please try uploading the PDF again or select a different document from the sidebar."
+                        return error_msg, [], search_mode
                 
             except Exception as context_e:
                 logger.warning(f"Error loading document context: {context_e}")
@@ -340,14 +352,14 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
                 
                 if response:
                     logger.info(f"OpenRouter response generated successfully (length: {len(response)} chars)")
-                    return response, sources
+                    return response, sources, search_mode
                 else:
                     logger.error("OpenRouter returned empty response")
-                    return "I apologize, but I couldn't generate a response at the moment. Please try again.", sources
+                    return "I apologize, but I couldn't generate a response at the moment. Please try again.", sources, search_mode
                     
             except Exception as openrouter_e:
                 logger.error(f"OpenRouter error: {openrouter_e}")
-                return f"I encountered an error while generating a response: {str(openrouter_e)}", sources
+                return f"I encountered an error while generating a response: {str(openrouter_e)}", sources, search_mode
         
         # Fallback to mock response only if OpenRouter is not available
         logger.info(f"Using mock response for question: {question[:50]}...")

@@ -164,6 +164,12 @@ async def query(sid, data):
             await sio.emit('error', {'message': 'Missing query or document_id'}, room=sid)
             return
         
+        # Check if this is a "new_chat_" temporary document
+        if document_id.startswith('new_chat_'):
+            logger.warning(f"Attempt to query temporary new_chat document: {document_id}")
+            await sio.emit('error', {'message': 'Please upload a PDF document first before starting a chat'}, room=sid)
+            return
+        
         # Import the AI response generator and chat history (database-backed)
         from app.chat import generate_ai_response
         from app.chat_history_db import chat_history_manager, ChatMessage
@@ -195,7 +201,7 @@ async def query(sid, data):
         
         # Generate AI response
         logger.info(f"🤖 Generating AI response for document {document_id}...")
-        response_text, sources = await generate_ai_response(query_text, document_id)
+        response_text, sources, search_mode = await generate_ai_response(query_text, document_id)
         
         logger.info(f"✅ Generated response for {sid}: {response_text[:100] if response_text else 'Empty'}...")
         
@@ -210,12 +216,13 @@ async def query(sid, data):
         chat_history_manager.add_message_to_session(session_id, ai_message)
         logger.info(f"💾 Saved AI response to session {session_id}")
         
-        # Send response back to client with session_id
+        # Send response back to client with session_id and search mode
         await sio.emit('response', {
             'response': response_text,
             'document_id': document_id,
             'session_id': session_id,
-            'sources': sources
+            'sources': sources,
+            'searchMode': search_mode
         }, room=sid)
         
     except Exception as e:

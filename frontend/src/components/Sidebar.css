@@ -1,8 +1,8 @@
 .sidebar {
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
-  border-right: 1px solid var(--border-light);
+  background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   padding: var(--spacing-xl);
@@ -17,7 +17,7 @@
   right: -100px;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
 }
@@ -36,7 +36,7 @@
   width: 100%;
   padding: var(--spacing-lg);
   background: var(--gradient-primary);
-  color: white;
+  color: var(--text-inverse);
   border-radius: var(--radius-xl);
   font-weight: 600;
   font-size: 1rem;
@@ -47,7 +47,7 @@
   margin-bottom: var(--spacing-xl);
   transition: var(--transition-bounce);
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.4), 0 0 30px rgba(34, 211, 238, 0.2);
   position: relative;
   overflow: hidden;
   z-index: 1;
@@ -230,8 +230,8 @@
 }
 
 .chat-session-item:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%);
-  border-color: rgba(99, 102, 241, 0.1);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(34, 211, 238, 0.08) 100%);
+  border-color: rgba(56, 189, 248, 0.2);
   transform: translateX(4px);
   box-shadow: var(--shadow-sm);
 }
@@ -241,8 +241,8 @@
 }
 
 .chat-session-item.active {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%);
-  border-color: rgba(99, 102, 241, 0.2);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.18) 0%, rgba(34, 211, 238, 0.12) 100%);
+  border-color: rgba(56, 189, 248, 0.3);
   box-shadow: var(--shadow-md);
 }
 

@@ -19,9 +19,10 @@ interface ChatPanelProps {
   onSourceClick: (pageNumber: number) => void
   onGenerateChatName?: (query: string) => void
   onSessionIdReceived?: (sessionId: string) => void
+  onUploadClick?: () => void
 }
 
-const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick, onGenerateChatName, onSessionIdReceived }: ChatPanelProps) => {
+const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick, onGenerateChatName, onSessionIdReceived, onUploadClick }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -99,6 +100,14 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
 
     newSocket.on('connect', () => {
       console.log('✅ Socket connected:', newSocket.id)
+      console.log('🔍 Setting connected to TRUE')
+      setConnected(true)
+      console.log('🔍 Connected state should now be:', true)
+    })
+
+    // Listen for backend's custom 'connected' event
+    newSocket.on('connected', (data) => {
+      console.log('🎉 Received backend connected event:', data)
       setConnected(true)
     })
 
@@ -224,6 +233,11 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
 
   const displayChatName = chatName || `Chat about ${documentName}`
 
+  // Debug: Log connected state changes
+  useEffect(() => {
+    console.log('🔍 Connected state changed to:', connected)
+  }, [connected])
+
   return (
     <div className="chat-panel">
       <div className="chat-header">
@@ -237,7 +251,7 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
           </div>
           <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
             <span className="status-dot" />
-            {connected ? 'Connected' : 'Disconnected'}
+            {connected ? 'Connected' : 'Disconnected'} <small>(State: {connected.toString()})</small>
           </div>
         </div>
       </div>
@@ -251,40 +265,48 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="empty-icon">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.5"
-                  d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                />
-              </svg>
-              <p className="empty-text">Start a conversation</p>
-              <p className="empty-subtext">Ask questions about your PDF document</p>
-              
-              {/* Centered Search Bar */}
-              <div className="centered-input-wrapper">
-                <textarea
-                  className="centered-chat-input"
-                  placeholder="Message PDFPixie..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={!connected}
-                  rows={1}
-                />
-                <motion.button
-                  className="centered-send-button"
-                  onClick={handleSendMessage}
-                  disabled={!input.trim() || !connected}
-                  whileHover={input.trim() && connected ? { scale: 1.05 } : {}}
-                  whileTap={input.trim() && connected ? { scale: 0.95 } : {}}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              {documentId.startsWith('new_chat_') ? (
+                <>
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="empty-icon">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
                   </svg>
-                </motion.button>
-              </div>
+                  <p className="empty-text">Upload a PDF to Start</p>
+                  <p className="empty-subtext">Choose a PDF file to begin chatting</p>
+                  
+                  {/* Upload Button */}
+                  {onUploadClick && (
+                    <motion.button
+                      className="upload-pdf-button"
+                      onClick={onUploadClick}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ marginRight: '8px' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                      Upload PDF
+                    </motion.button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="empty-icon">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                    />
+                  </svg>
+                  <p className="empty-text">Start a conversation</p>
+                  <p className="empty-subtext">Ask questions about your PDF document</p>
+                </>
+              )}
             </motion.div>
           </div>
         ) : (
@@ -381,25 +403,36 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
         )}
       </div>
 
-      {/* Only show bottom input when messages exist */}
-      {messages.length > 0 && (
-        <div className="chat-input-container">
-          <div className="chat-input-wrapper">
+      {/* Single centered input - always visible for real documents */}
+      {!documentId.startsWith('new_chat_') && (
+        <div className="chat-input-container centered-input-fixed">
+          <div className="centered-input-wrapper">
             <textarea
-              className="chat-input"
-              placeholder="Ask a question about your PDF..."
+              className="centered-chat-input"
+              placeholder={connected ? "Message PDFPixie..." : "Connecting to server..."}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                console.log('🔍 onChange fired:', e.target.value, 'Connected:', connected)
+                setInput(e.target.value)
+              }}
               onKeyPress={handleKeyPress}
+              onClick={(e) => {
+                console.log('🔍 Textarea clicked! Connected:', connected, 'Disabled:', e.currentTarget.disabled)
+              }}
+              onFocus={(e) => {
+                console.log('🔍 Textarea focused! Connected:', connected, 'Disabled:', e.currentTarget.disabled)
+              }}
               disabled={!connected}
               rows={1}
+              style={{ pointerEvents: 'auto', userSelect: 'text' }}
             />
             <motion.button
-              className="send-button"
+              className="centered-send-button"
               onClick={handleSendMessage}
               disabled={!input.trim() || !connected}
               whileHover={input.trim() && connected ? { scale: 1.05 } : {}}
               whileTap={input.trim() && connected ? { scale: 0.95 } : {}}
+              title={!connected ? "Waiting for connection..." : "Send message"}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

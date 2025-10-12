@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import SplashScreen from './components/SplashScreen'
-import UploadScreen from './components/UploadScreen'
 import ChatWorkspace from './components/ChatWorkspace'
 import './App.css'
 
@@ -24,7 +22,6 @@ export interface ChatSession {
 }
 
 function App() {
-  const [showSplash, setShowSplash] = useState(true)
   const [currentDocument, setCurrentDocument] = useState<DocumentInfo | null>(null)
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
   const navigate = useNavigate()
@@ -40,49 +37,19 @@ function App() {
         console.error('Failed to parse chat sessions:', e)
       }
     }
+    
+    // Start at root (empty state)
+    if (window.location.pathname === '/chat' || window.location.pathname === '/') {
+      // Allow the current route
+    } else {
+      navigate('/')
+    }
   }, [])
 
-  const handleSplashComplete = () => {
-    setShowSplash(false)
-    
-    // Check if there are existing chat sessions
-    if (chatSessions.length > 0) {
-      // Load the most recent session
-      const mostRecentSession = chatSessions[0]
-      setCurrentDocument({
-        document_id: mostRecentSession.document_id,
-        filename: mostRecentSession.document_name,
-        status: 'processed',
-      })
-      navigate('/chat')
-    } else {
-      // First time user - show upload screen
-      navigate('/upload')
-    }
-  }
-
-  const handleUploadSuccess = (docInfo: DocumentInfo) => {
-    setCurrentDocument(docInfo)
-    
-    // Create new chat session (backend will assign real session_id on first message)
-    const newSession: ChatSession = {
-      session_id: `temp_${Date.now()}`, // Temporary ID until backend creates real session
-      document_id: docInfo.document_id,
-      document_name: docInfo.filename,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }
-    
-    const updatedSessions = [newSession, ...chatSessions]
-    setChatSessions(updatedSessions)
-    localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
-    
-    navigate('/chat')
-  }
-
   const handleNewChat = () => {
+    // Clear current document and navigate to root for empty state
     setCurrentDocument(null)
-    navigate('/upload')
+    navigate('/')
   }
 
   const handleSelectSession = (session: ChatSession) => {
@@ -110,9 +77,8 @@ function App() {
           status: 'processed',
         })
       } else {
-        // No more sessions, redirect to upload
+        // No more sessions, go back to empty state
         setCurrentDocument(null)
-        navigate('/upload')
       }
     }
   }
@@ -147,29 +113,31 @@ function App() {
     console.log('✅ Sessions after update:', updatedSessions.map(s => ({ doc: s.document_id, session: s.session_id })))
   }
 
-  if (showSplash) {
-    return <SplashScreen onComplete={handleSplashComplete} />
-  }
-
   return (
     <div className="app-container">
       <Routes>
-        <Route path="/" element={<SplashScreen onComplete={handleSplashComplete} />} />
-        <Route path="/upload" element={<UploadScreen onUploadSuccess={handleUploadSuccess} />} />
-        <Route
-          path="/chat"
-          element={
-            <ChatWorkspace
-              currentDocument={currentDocument}
-              chatSessions={chatSessions}
-              onNewChat={handleNewChat}
-              onSelectSession={handleSelectSession}
-              onDeleteSession={handleDeleteSession}
-              onUpdateChatName={handleUpdateChatName}
-              onUpdateSessionId={handleUpdateSessionId}
-            />
-          }
-        />
+        <Route path="/" element={
+          <ChatWorkspace
+            currentDocument={currentDocument}
+            chatSessions={chatSessions}
+            onNewChat={handleNewChat}
+            onSelectSession={handleSelectSession}
+            onDeleteSession={handleDeleteSession}
+            onUpdateChatName={handleUpdateChatName}
+            onUpdateSessionId={handleUpdateSessionId}
+          />
+        } />
+        <Route path="/chat" element={
+          <ChatWorkspace
+            currentDocument={currentDocument}
+            chatSessions={chatSessions}
+            onNewChat={handleNewChat}
+            onSelectSession={handleSelectSession}
+            onDeleteSession={handleDeleteSession}
+            onUpdateChatName={handleUpdateChatName}
+            onUpdateSessionId={handleUpdateSessionId}
+          />
+        } />
       </Routes>
     </div>
   )
