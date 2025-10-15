@@ -190,7 +190,12 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
   }, [messages])
 
   const handleSendMessage = () => {
-    if (!input.trim() || !socket || !connected) return
+    if (!input.trim() || !socket) {
+      console.log('❌ Cannot send:', { hasInput: !!input.trim(), hasSocket: !!socket, connected })
+      return
+    }
+    
+    console.log('✅ Sending message:', { input, socket: !!socket, connected })
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -224,19 +229,9 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
     })
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSendMessage()
-    }
-  }
-
   const displayChatName = chatName || `Chat about ${documentName}`
 
-  // Debug: Log connected state changes
-  useEffect(() => {
-    console.log('🔍 Connected state changed to:', connected)
-  }, [connected])
+
 
   return (
     <div className="chat-panel">
@@ -251,7 +246,7 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
           </div>
           <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
             <span className="status-dot" />
-            {connected ? 'Connected' : 'Disconnected'} <small>(State: {connected.toString()})</small>
+            {connected ? 'Connected' : 'Disconnected'}
           </div>
         </div>
       </div>
@@ -403,44 +398,87 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
         )}
       </div>
 
-      {/* Single centered input - always visible for real documents */}
+      {/* Simple Chat Input - Bulletproof Implementation */}
       {!documentId.startsWith('new_chat_') && (
-        <div className="chat-input-container centered-input-fixed">
-          <div className="centered-input-wrapper">
-            <textarea
-              className="centered-chat-input"
-              placeholder={connected ? "Message PDFPixie..." : "Connecting to server..."}
+        <div style={{
+          padding: '20px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'rgba(15, 23, 42, 0.5)',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <div style={{
+            display: 'flex',
+            gap: '12px',
+            maxWidth: '1200px',
+            margin: '0 auto'
+          }}>
+            <input
+              type="text"
               value={input}
-              onChange={(e) => {
-                console.log('🔍 onChange fired:', e.target.value, 'Connected:', connected)
-                setInput(e.target.value)
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSendMessage()
+                }
               }}
-              onKeyPress={handleKeyPress}
-              onClick={(e) => {
-                console.log('🔍 Textarea clicked! Connected:', connected, 'Disabled:', e.currentTarget.disabled)
+              placeholder="Ask a question about your PDF..."
+              style={{
+                flex: 1,
+                padding: '14px 20px',
+                fontSize: '15px',
+                border: '2px solid rgba(56, 189, 248, 0.3)',
+                borderRadius: '12px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: '#F8FAFC',
+                outline: 'none',
+                transition: 'all 0.2s'
               }}
               onFocus={(e) => {
-                console.log('🔍 Textarea focused! Connected:', connected, 'Disabled:', e.currentTarget.disabled)
+                e.target.style.borderColor = '#38BDF8'
+                e.target.style.background = 'rgba(255, 255, 255, 0.08)'
               }}
-              disabled={!connected}
-              rows={1}
-              style={{ pointerEvents: 'auto', userSelect: 'text' }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(56, 189, 248, 0.3)'
+                e.target.style.background = 'rgba(255, 255, 255, 0.05)'
+              }}
             />
-            <motion.button
-              className="centered-send-button"
+            <button
               onClick={handleSendMessage}
-              disabled={!input.trim() || !connected}
-              whileHover={input.trim() && connected ? { scale: 1.05 } : {}}
-              whileTap={input.trim() && connected ? { scale: 0.95 } : {}}
-              title={!connected ? "Waiting for connection..." : "Send message"}
+              disabled={!input.trim()}
+              style={{
+                padding: '14px 28px',
+                fontSize: '15px',
+                fontWeight: '600',
+                border: 'none',
+                borderRadius: '12px',
+                background: input.trim() 
+                  ? 'linear-gradient(135deg, #38BDF8, #22D3EE)' 
+                  : 'rgba(100, 100, 100, 0.5)',
+                color: input.trim() ? 'white' : 'rgba(255, 255, 255, 0.3)',
+                cursor: input.trim() ? 'pointer' : 'not-allowed',
+                transition: 'all 0.2s',
+                boxShadow: input.trim() ? '0 4px 12px rgba(56, 189, 248, 0.3)' : 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (input.trim()) {
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(56, 189, 248, 0.4)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)'
+                e.currentTarget.style.boxShadow = input.trim() 
+                  ? '0 4px 12px rgba(56, 189, 248, 0.3)' 
+                  : 'none'
+              }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </motion.button>
+              {isTyping ? 'Sending...' : 'Send'}
+            </button>
           </div>
         </div>
       )}
+      
     </div>
   )
 }

@@ -51,6 +51,7 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 
 # CRITICAL: Must use 'socket_app' for Socket.IO chat to work!
+python -m uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
 uv run uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
 ```
 
