@@ -1,270 +1,189 @@
-# Development Guide
+# PDFPixie Development Guide 🛠️
 
-This guide will help you set up and run the Newchat application locally for development.
+Additional development information for contributors and developers.
 
-## Prerequisites
+## Architecture Overview
 
-Make sure you have the following installed:
+### Backend (FastAPI)
+- **main.py** - FastAPI app with Socket.IO integration
+- **app/pdf_processing.py** - PDF text extraction with PyMuPDF
+- **app/chat.py** - AI response generation with LangChain
+- **app/chat_history_db.py** - SQLite-based chat persistence
+- **app/openrouter_client.py** - OpenRouter API client
+- **app/auth.py** - Authentication handlers (dev mode)
+- **app/database.py** - Database initialization
 
-- **Node.js 18+** - [Download here](https://nodejs.org/)
-- **Python 3.13.7** - [Download here](https://www.python.org/)
-- **UV Package Manager** - [Install guide](https://github.com/astral-sh/uv)
-- **Docker & Docker Compose** - [Download here](https://www.docker.com/)
-- **Git** - [Download here](https://git-scm.com/)
+### Frontend (React + TypeScript)
+- **App.tsx** - Main application with routing
+- **components/ChatWorkspace.tsx** - Main workspace layout
+- **components/ChatPanel.tsx** - Chat interface with Socket.IO
+- **components/UploadSection.tsx** - PDF upload with drag-and-drop
+- **components/Sidebar.tsx** - Session management sidebar
 
-## Quick Setup
+## Key Technologies
 
-### Automated Setup (Recommended)
+### Vector Search
+- **ChromaDB** - Vector embeddings storage
+- **Semantic search** - Context-aware document retrieval
+- Automatic chunking with overlap for better context
 
-Run the setup script for your platform:
+### Real-time Communication
+- **Socket.IO** - WebSocket-based chat
+- Event-driven architecture
+- Automatic reconnection handling
 
-**Windows:**
-```bash
-.\scripts\setup.bat
-```
-
-**Linux/macOS:**
-```bash
-chmod +x scripts/setup.sh
-./scripts/setup.sh
-```
-
-### Manual Setup
-
-If you prefer to set up manually:
-
-#### 1. Clone the Repository
-```bash
-git clone <repository-url>
-cd Newchat
-```
-
-#### 2. Set Up Backend
-```bash
-cd backend
-
-# Install UV (if not already installed)
-# Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-# Unix: curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Create virtual environment with UV
-uv venv
-
-# Windows
-.venv\Scripts\activate
-
-# Linux/macOS
-source .venv/bin/activate
-
-# Install dependencies (much faster with UV)
-# Note: Using ChromaDB instead of FAISS for Python 3.13 compatibility
-uv pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-#### 3. Set Up Frontend
-```bash
-cd frontend
-npm install
-echo "REACT_APP_API_URL=http://localhost:8000" > .env
-```
-
-#### 4. Start Development Services
-```bash
-# Start PostgreSQL and Redis
-docker-compose -f docker-compose.dev.yml up -d
-```
-
-## Running the Application
-
-### Development Mode
-
-Start each service in separate terminals:
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-uvicorn main:socket_app --reload
-```
-
-**Terminal 2 - Frontend:**
-```bash
-cd frontend
-npm start
-```
-
-**Terminal 3 - Services (if not already running):**
-```bash
-docker-compose -f docker-compose.dev.yml up -d
-```
-
-### Production Mode
-
-Build and run with Docker:
-
-```bash
-docker-compose up --build
-```
-
-## Application URLs
-
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:8000
-- **API Documentation:** http://localhost:8000/docs
-- **PGAdmin:** http://localhost:5050 (admin@newchat.dev / admin)
-- **Redis Commander:** http://localhost:8081
-
-## Environment Variables
-
-### Backend (.env)
-
-```env
-# Required for AI functionality
-OPENAI_API_KEY=your-openai-api-key
-
-# AWS Configuration (for S3 and Cognito)
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
-S3_BUCKET_NAME=your-s3-bucket-name
-
-# Database (auto-configured for development)
-DATABASE_URL=postgresql://newchat_user:newchat_password@localhost:5432/newchat
-
-# Redis (auto-configured for development)
-REDIS_URL=redis://localhost:6379/0
-```
-
-### Frontend (.env)
-
-```env
-REACT_APP_API_URL=http://localhost:8000
-REACT_APP_SOCKET_URL=http://localhost:8000
-```
+### Database
+- **SQLite** - Lightweight chat history storage
+- Session-based message persistence
+- Automatic database initialization
 
 ## Development Workflow
 
-### 1. Making Changes
+### Adding New Features
 
-- **Backend:** Files are auto-reloaded with `--reload` flag
-- **Frontend:** Hot reloading is enabled by default with Create React App
+1. **Backend Changes**
+   ```bash
+   # Add new route or functionality
+   cd backend/app
+   # Edit relevant file
+   # Backend auto-reloads with --reload flag
+   ```
 
-### 2. Database Changes
+2. **Frontend Changes**
+   ```bash
+   # Add new component or feature
+   cd frontend/src/components
+   # Create or edit component
+   # Vite provides instant HMR
+   ```
 
-If you modify the database schema:
+### Debugging
 
-```bash
-# Restart the database container
-docker-compose -f docker-compose.dev.yml restart postgres
-
-# Or recreate with fresh data
-docker-compose -f docker-compose.dev.yml down -v
-docker-compose -f docker-compose.dev.yml up -d
+**Backend Logs:**
+```python
+# Add logging statements
+logger.info(f"Debug: {variable}")
+logger.error(f"Error occurred: {e}", exc_info=True)
 ```
 
-### 3. Adding Dependencies
-
-**Backend:**
-```bash
-cd backend
-source .venv/bin/activate
-uv pip install new-package
-uv pip freeze > requirements.txt
+**Frontend Console:**
+```typescript
+// Debug Socket.IO events
+socket.on('response', (data) => {
+  console.log('Received response:', data)
+})
 ```
 
-**Frontend:**
+### Common Tasks
+
+**Clear Chat History:**
 ```bash
-cd frontend
-npm install new-package
+rm -rf backend/data/chat_history/*.db
 ```
 
-### 4. Testing
-
-**Backend Tests:**
+**Clear Vector Embeddings:**
 ```bash
-cd backend
-source .venv/bin/activate
-pytest tests/
+rm -rf backend/data/chromadb/*
 ```
 
-**Frontend Tests:**
+**Reset Everything:**
 ```bash
-cd frontend
-npm test
+rm -rf backend/data/uploads/*
+rm -rf backend/data/chromadb/*
+rm -rf backend/data/chat_history/*.db
 ```
+
+## Code Style
+
+### Python (Backend)
+- Follow PEP 8 style guide
+- Use type hints where possible
+- Keep functions focused and small
+- Document complex logic with comments
+
+### TypeScript (Frontend)
+- Use functional components with hooks
+- Proper TypeScript typing
+- CSS modules for styling
+- Keep components reusable
+
+## Testing
+
+**Manual Testing Checklist:**
+1. ✅ Upload PDF file
+2. ✅ Send chat message
+3. ✅ Receive AI response
+4. ✅ View chat history
+5. ✅ Switch between sessions
+6. ✅ Refresh page (state persistence)
+
+## Performance Optimization
+
+### Backend
+- Async/await for I/O operations
+- Efficient chunking strategy
+- ChromaDB query optimization
+- Connection pooling for database
+
+### Frontend
+- React.memo for expensive components
+- Lazy loading for PDFs
+- Debouncing for search inputs
+- Virtual scrolling for long chat histories
 
 ## Troubleshooting
 
-### Common Issues
-
-1. **Port already in use**
-   - Check if services are already running: `docker ps`
-   - Stop conflicting services: `docker-compose -f docker-compose.dev.yml down`
-
-2. **Python virtual environment issues**
-   - Delete and recreate: `rm -rf .venv && uv venv`
-
-3. **Node modules issues**
-   - Clear cache: `npm cache clean --force`
-   - Reinstall: `rm -rf node_modules package-lock.json && npm install`
-
-4. **Database connection issues**
-   - Check if PostgreSQL is running: `docker-compose -f docker-compose.dev.yml ps`
-   - Check logs: `docker-compose -f docker-compose.dev.yml logs postgres`
-
-### Logs
-
-View logs for debugging:
-
+### Socket.IO Issues
 ```bash
-# All services
-docker-compose -f docker-compose.dev.yml logs -f
-
-# Specific service
-docker-compose -f docker-compose.dev.yml logs -f postgres
-docker-compose -f docker-compose.dev.yml logs -f redis
-
-# Backend logs (when running locally)
-tail -f backend/logs/app.log
+# Check Socket.IO events in browser console
+# Ensure using 'socket_app' not 'app' in uvicorn
+uvicorn main:socket_app --reload  # ✅ Correct
+uvicorn main:app --reload          # ❌ Wrong - breaks Socket.IO
 ```
 
-## Development Tips
+### Port Conflicts
+```bash
+# Check what's using port 8000
+netstat -ano | findstr :8000  # Windows
+lsof -i :8000                 # Unix/macOS
 
-1. **Use the API documentation** at http://localhost:8000/docs for testing endpoints
-2. **Monitor database** with PGAdmin at http://localhost:5050
-3. **Check Redis data** with Redis Commander at http://localhost:8081
-4. **Use browser dev tools** for frontend debugging
-5. **Check backend logs** for API errors and debugging info
-
-## Project Structure
-
-```
-Newchat/
-├── frontend/           # React TypeScript app
-│   ├── src/
-│   │   ├── components/ # Reusable UI components
-│   │   └── ...
-│   └── public/
-├── backend/            # FastAPI Python app
-│   ├── app/           # Application modules
-│   │   ├── auth.py    # Authentication logic
-│   │   ├── pdf_processing.py  # PDF handling
-│   │   └── chat.py    # Chat functionality
-│   └── main.py        # Application entry point
-├── docker/            # Docker configurations
-├── scripts/           # Setup and utility scripts
-└── docs/             # Documentation
+# Kill process if needed
+taskkill /PID <pid> /F        # Windows
+kill -9 <pid>                 # Unix/macOS
 ```
 
-## Next Steps
+### ChromaDB Issues
+```bash
+# If ChromaDB corrupts, remove and recreate
+rm -rf backend/data/chromadb
+# Re-upload PDFs to regenerate embeddings
+```
 
-Once you have the development environment running:
+## Deployment Notes
 
-1. **Configure your API keys** in the `.env` files
-2. **Test PDF upload** functionality
-3. **Try the chat interface** with a sample PDF
-4. **Explore the API documentation** at `/docs`
-5. **Check the database** to see how data is stored
+- Set proper environment variables for production
+- Use production-grade database (PostgreSQL) instead of SQLite
+- Enable HTTPS for WebSocket connections
+- Configure proper CORS origins
+- Add rate limiting for API endpoints
+- Implement proper authentication (remove dev mode)
 
-For production deployment, see the [Deployment Guide](./DEPLOYMENT.md).
+## Contributing
+
+1. Create feature branch from `main`
+2. Make changes with clear commits
+3. Test thoroughly
+4. Update documentation if needed
+5. Submit pull request with description
+
+## Resources
+
+- [FastAPI Docs](https://fastapi.tiangolo.com/)
+- [Socket.IO Docs](https://socket.io/docs/v4/)
+- [LangChain Docs](https://python.langchain.com/)
+- [ChromaDB Docs](https://docs.trychroma.com/)
+- [React Docs](https://react.dev/)
+
+---
+
+For basic setup instructions, see the main [README.md](../README.md)

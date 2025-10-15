@@ -1,120 +1,246 @@
-# PDFPixie - AI-Powered PDF Chat Application
+# PDFPixie - AI-Powered PDF Chat Application 🤖📄
 
-A full-stack AI-powered PDF ingestion, parsing, and interactive chat application. Upload PDFs, ask questions, and get intelligent responses based on document content.
+Your intelligent PDF companion. Upload PDFs, ask questions, and get AI-powered responses based on document content using advanced semantic search and real-time chat.
 
-## Features
+## ✨ Features
 
-- 📄 **PDF Upload & Processing**: Drag-and-drop PDF uploads with text extraction
-- 🤖 **AI-Powered Chat**: Interactive chat with AI based on PDF content
-- 🔍 **Semantic Search**: ChromaDB vector embeddings for accurate document search
-- 🔐 **Authentication**: AWS Cognito integration with JWT tokens
-- ⚡ **Real-time**: WebSocket-based chat with typing indicators
-- 📱 **Responsive**: Modern UI with Tailwind CSS
-- 🐳 **Containerized**: Docker and Kubernetes ready
-- ☁️ **Cloud Native**: AWS S3, RDS, and Bedrock integration
+- 📄 **PDF Upload & Processing** - Drag-and-drop interface with instant text extraction
+- 🤖 **AI-Powered Chat** - Interactive conversations with your PDF documents
+- 🔍 **Semantic Search** - ChromaDB vector embeddings for accurate context retrieval
+- ⚡ **Real-time Communication** - WebSocket-based chat with typing indicators
+- � **Chat History** - Persistent conversation storage with session management
+- 🎨 **Modern UI** - Beautiful interface with glassmorphism effects and Zen Serif font
+- 🚀 **Fast Development** - UV package manager for 10-100x faster installations
 
-## Tech Stack
+## 🛠️ Tech Stack
 
-- **Frontend**: React 18 + TypeScript, CSS, Socket.io-client, React-PDF, Vite
-- **Backend**: FastAPI, LangChain, PyMuPDF, ChromaDB
-- **Package Manager**: UV (10-100x faster than pip)
-- **Storage**: AWS S3, PostgreSQL/RDS
-- **AI**: OpenRouter API, ChromaDB embeddings
-- **Deployment**: Docker, Kubernetes, GitHub Actions
+**Frontend:**
+- React 18 + TypeScript
+- Socket.IO Client (real-time communication)
+- React-PDF (document preview)
+- Vite (build tool)
+- CSS3 with custom design system
 
-## Quick Start
+**Backend:**
+- FastAPI (async Python web framework)
+- Socket.IO Server (WebSocket communication)
+- LangChain (AI orchestration)
+- ChromaDB (vector embeddings)
+- PyMuPDF (PDF text extraction)
+- OpenRouter API (AI responses)
+- SQLite (chat history storage)
+
+**Development:**
+- UV Package Manager (faster than pip)
+- Docker & Docker Compose (containerization)
+- Python 3.10+
+- Node.js 18+
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
-- Python 3.10+
-- Docker & Docker Compose
-- AWS CLI configured
+Before you begin, ensure you have:
+- **Node.js 18+** - [Download](https://nodejs.org/)
+- **Python 3.10+** - [Download](https://python.org/)
+- **Git** - [Download](https://git-scm.com/)
 
-### Development Setup
+### Installation
 
-1. **Clone and setup**:
+1. **Clone the repository**
 ```bash
-git clone <repository-url>
-cd pdfpixie
+git clone https://github.com/yourusername/chatpdf.git
+cd chatpdf
 ```
 
-2. **Backend Setup**:
+2. **Backend Setup**
+
 ```bash
 cd backend
-# Install UV if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh  # Unix
-# Or: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"  # Windows
 
+# Install UV package manager (optional but recommended - 10-100x faster)
+# Windows PowerShell:
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+# Unix/macOS:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment
+python -m venv .venv
+# Or with UV:
 uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-uv pip install -r requirements.txt
 
-# CRITICAL: Must use 'socket_app' for Socket.IO chat to work!
-python -m uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
-uv run uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
+# Activate virtual environment
+# Windows:
+.venv\Scripts\activate
+# Unix/macOS:
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+# Or with UV (much faster):
+uv pip install -r requirements.txt
 ```
 
-3. **Frontend Setup**:
+3. **Frontend Setup**
+
 ```bash
 cd frontend
 npm install
 ```
 
-4. **Environment Variables**:
-Create `.env` files in both frontend and backend directories (see `.env.example` files)
+### Running the Application
 
-5. **Start Development**:
-```powershell
-# Terminal 1: Backend (MUST use socket_app for chat!)
+You need **two terminals** - one for backend, one for frontend:
+
+**Terminal 1 - Backend:**
+```bash
 cd backend
-uvicorn main:socket_app --reload
-uv run uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
+.venv\Scripts\activate  # Windows
+# source .venv/bin/activate  # Unix/macOS
 
-# Terminal 2: Frontend  
+# IMPORTANT: Must use 'socket_app' for chat to work!
+uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
+```
+
+**Terminal 2 - Frontend:**
+```bash
 cd frontend
 npm run dev
-# Or if PowerShell blocks npm: cmd /c "npm run dev"
-
-# Frontend will be available at http://localhost:3000
-# Backend API at http://localhost:8000
-# API Docs at http://localhost:8000/docs
 ```
 
-### Development Mode
-The app runs in **mock mode** for local development without AWS credentials:
-- ✅ Local file storage instead of S3
-- ✅ Mock embeddings instead of OpenAI
-- ✅ JSON-based storage instead of ChromaDB
-- ✅ Dev token authentication (`dev-token`)
-- ✅ No AWS/external services required!
+### Access the Application
 
-## Project Structure
+- 🌐 **Frontend**: http://localhost:3000
+- 🔌 **Backend API**: http://localhost:8000
+- 📚 **API Documentation**: http://localhost:8000/docs
+
+## 📖 How to Use
+
+1. **Upload a PDF**
+   - Click "Upload PDF" or drag-and-drop a PDF file
+   - Wait for processing to complete (text extraction + embeddings)
+
+2. **Start Chatting**
+   - Type your question in the chat input
+   - Press Enter or click Send
+   - AI will analyze the document and respond with relevant information
+
+3. **View Chat History**
+   - Previous conversations are automatically saved
+   - Switch between different PDF sessions from the sidebar
+
+4. **Search Modes**
+   - Automatic semantic search finds relevant document sections
+   - Context-aware AI responses based on document content
+
+## 📁 Project Structure
 
 ```
-PDFPixie/
-├── frontend/          # React + TypeScript UI
-├── backend/           # FastAPI async backend
-├── docker/           # Containerization configs
-├── k8s/              # Kubernetes YAMLs/Helm charts
-├── scripts/          # CI/CD pipelines, setup scripts
-├── docs/             # API documentation
-└── .github/          # GitHub workflows and instructions
+chatpdf/
+├── frontend/                 # React TypeScript application
+│   ├── src/
+│   │   ├── components/      # React components
+│   │   ├── App.tsx          # Main app component
+│   │   └── main.tsx         # Entry point
+│   ├── index.html           # HTML template (includes Zen Serif font)
+│   └── package.json
+│
+├── backend/                 # FastAPI Python application
+│   ├── app/
+│   │   ├── auth.py          # Authentication logic
+│   │   ├── pdf_processing.py # PDF parsing & embeddings
+│   │   ├── chat.py          # Chat & AI response generation
+│   │   ├── chat_history_db.py # Chat history management
+│   │   └── openrouter_client.py # AI client
+│   ├── data/
+│   │   ├── uploads/         # Uploaded PDFs
+│   │   ├── chromadb/        # Vector embeddings
+│   │   └── chat_history/    # SQLite chat database
+│   ├── main.py              # FastAPI app + Socket.IO
+│   └── requirements.txt
+│
+├── docker/                  # Docker configurations
+├── scripts/                 # Setup scripts
+└── README.md               # This file
 ```
 
-## API Documentation
+## 🔧 Configuration
 
-- Development: http://localhost:8000/docs
-- Production: Available after deployment
+### Environment Variables (Optional)
 
-## Contributing
+Create `.env` file in `backend/` directory:
+
+```env
+# AI Configuration (optional - uses defaults if not set)
+OPENROUTER_API_KEY=your-api-key-here
+OPENROUTER_MODEL=openai/gpt-3.5-turbo
+
+# Storage paths (auto-created)
+UPLOAD_DIR=./data/uploads
+CHROMA_DIR=./data/chromadb
+CHAT_HISTORY_DIR=./data/chat_history
+```
+
+The application works in **development mode** without any API keys:
+- ✅ Local file storage for PDFs
+- ✅ ChromaDB for local embeddings
+- ✅ SQLite for chat history
+- ✅ Mock authentication for development
+
+## 🧪 Development
+
+### Key Commands
+
+```bash
+# Backend
+cd backend
+uvicorn main:socket_app --reload    # Start with hot reload
+pytest tests/                       # Run tests (if available)
+
+# Frontend
+cd frontend
+npm run dev                         # Start dev server
+npm run build                       # Build for production
+npm run preview                     # Preview production build
+```
+
+### Important Notes
+
+- ⚠️ **Must use `main:socket_app`** - Using `main:app` will break Socket.IO chat!
+- 💡 Frontend runs on port 3000 (not 3001)
+- 🔄 Backend uses async Socket.IO for real-time communication
+- 💾 Chat history automatically persists to SQLite database
+
+## 🐳 Docker Deployment
+
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Or use development compose file
+docker-compose -f docker-compose.dev.yml up
+```
+
+## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+## 📝 License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- FastAPI for the excellent Python web framework
+- React team for the powerful UI library
+- LangChain for AI orchestration tools
+- ChromaDB for vector embeddings
+- OpenRouter for AI API access
+
+---
+
+**Made with ❤️ for intelligent document interaction**

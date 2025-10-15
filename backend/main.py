@@ -1,14 +1,11 @@
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer
 import socketio
 import uvicorn
-import os
 from dotenv import load_dotenv
 import logging
-from typing import List, Optional
-import json
+import uuid
 from datetime import datetime
 
 # Load environment variables
@@ -228,26 +225,6 @@ async def query(sid, data):
     except Exception as e:
         logger.error(f"❌ Error processing query from {sid}: {e}", exc_info=True)
         await sio.emit('error', {'message': f'Error processing query: {str(e)}'}, room=sid)
-
-# WebSocket endpoint for real-time chat
-@app.websocket("/ws/{client_id}")
-async def websocket_endpoint(websocket: WebSocket, client_id: int):
-    await websocket.accept()
-    try:
-        while True:
-            data = await websocket.receive_text()
-            message = json.loads(data)
-            
-            # Process message here (integrate with AI service)
-            response = f"Echo: {message.get('text', 'No message')}"
-            
-            await websocket.send_text(json.dumps({
-                "type": "response",
-                "text": response,
-                "timestamp": datetime.utcnow().isoformat()
-            }))
-    except WebSocketDisconnect:
-        logger.info(f"Client {client_id} disconnected from WebSocket")
 
 if __name__ == "__main__":
     uvicorn.run(
