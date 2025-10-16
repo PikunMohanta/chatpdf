@@ -20,16 +20,58 @@ interface ChatPanelProps {
   onGenerateChatName?: (query: string) => void
   onSessionIdReceived?: (sessionId: string) => void
   onUploadClick?: () => void
+  onUpdatePreviewMessage?: (sessionId: string, previewMessage: string) => void
+  onUpdateLastMessage?: (sessionId: string, lastMessage: string) => void
+  onShowPdf?: () => void
+  pdfHidden?: boolean
 }
 
-const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick, onGenerateChatName, onSessionIdReceived, onUploadClick }: ChatPanelProps) => {
+const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick, onGenerateChatName, onSessionIdReceived, onUploadClick, onUpdatePreviewMessage, onUpdateLastMessage, onShowPdf, pdfHidden }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
   const [socket, setSocket] = useState<Socket | null>(null)
   const [connected, setConnected] = useState(false)
-  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>(sessionId)
+  const [currentSessionId, setCurrentSessionId] = useState<string>(sessionId || '')
+  const [lastUserQuery, setLastUserQuery] = useState<string>('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const personalizeAiResponse = (response: string, userQuery?: string): string => {
+    const lowerQuery = userQuery?.toLowerCase() || ''
+    const lowerResponse = response.toLowerCase()
+    
+    // Choose appropriate emoji and prefix based on query type
+    if (lowerQuery.includes('summarize') || lowerQuery.includes('summary')) {
+      return `📋 Here's a comprehensive summary:\n\n${response}`
+    }
+    
+    if (lowerQuery.includes('explain') || lowerQuery.includes('what is') || lowerQuery.includes('what are')) {
+      return `💡 Let me explain this for you:\n\n${response}`
+    }
+    
+    if (lowerQuery.includes('list') || lowerQuery.includes('find') || lowerQuery.includes('show me')) {
+      return `🔍 Here's what I found:\n\n${response}`
+    }
+    
+    if (lowerQuery.includes('how') || lowerQuery.includes('process') || lowerQuery.includes('method')) {
+      return `🛠️ Here's how it works:\n\n${response}`
+    }
+    
+    if (lowerQuery.includes('compare') || lowerQuery.includes('difference') || lowerQuery.includes('vs')) {
+      return `⚖️ Here's the comparison:\n\n${response}`
+    }
+    
+    if (lowerResponse.includes('error') || lowerResponse.includes('sorry') || lowerResponse.includes('cannot')) {
+      return `🤔 I encountered an issue:\n\n${response}`
+    }
+    
+    if (lowerResponse.includes('page') || lowerResponse.includes('document') || lowerResponse.includes('pdf')) {
+      return `📄 Based on the document:\n\n${response}`
+    }
+    
+    // Default warm greeting
+    return `💫 Here's what I discovered:\n\n${response}`
+  }
 
   // Load chat history when session changes
   useEffect(() => {
@@ -152,15 +194,24 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
         }
       }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          text: data.response,
-          from: 'ai',
-          timestamp: new Date(),
-        },
-      ])
+      const personalizedResponse = personalizeAiResponse(data.response, lastUserQuery)
+      
+      const aiMessage = {
+        id: Date.now().toString(),
+        text: personalizedResponse,
+        from: 'ai' as const,
+        timestamp: new Date(),
+      }
+      
+      setMessages((prev) => [...prev, aiMessage])
+      
+      // Update last message preview
+      if (onUpdateLastMessage && data.session_id) {
+        const preview = data.response.length > 60 
+          ? `${data.response.substring(0, 60)}...` 
+          : data.response
+        onUpdateLastMessage(data.session_id, preview)
+      }
     })
 
     newSocket.on('error', (error: { message: string }) => {
@@ -205,6 +256,7 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
     }
 
     const queryText = input
+    setLastUserQuery(queryText)
     setMessages((prev) => [...prev, userMessage])
     setInput('')
     setIsTyping(true)
@@ -212,6 +264,13 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
     // Generate chat name from first message
     if (messages.length === 0 && onGenerateChatName) {
       onGenerateChatName(queryText)
+    }
+
+    // Set preview message from first query (for sidebar display)
+    if (messages.length === 0 && onUpdatePreviewMessage && currentSessionId) {
+      // Truncate to 50 characters for preview
+      const previewText = queryText.length > 50 ? queryText.substring(0, 47) + '...' : queryText
+      onUpdatePreviewMessage(currentSessionId, previewText)
     }
 
     console.log('📤 Sending query to backend:', {
@@ -237,17 +296,10 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
     <div className="chat-panel">
       <div className="chat-header">
         <div className="chat-header-info">
-          <h3 className="chat-title">{displayChatName}</h3>
-          <div className="chat-document-info">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="pdf-icon-header">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-            </svg>
-            <span className="chat-document-name">{documentName}</span>
-          </div>
-          <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
-            <span className="status-dot" />
-            {connected ? 'Connected' : 'Disconnected'}
-          </div>
+          <h3 className="chat-title">
+            {displayChatName}
+            <div className="status-dot connected" />
+          </h3>
         </div>
       </div>
 
@@ -384,10 +436,13 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
                   </div>
                 </div>
                 <div className="message-content">
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                  <div className="ai-thinking-container">
+                    <div className="thinking-text">💭 AI is thinking...</div>
+                    <div className="typing-indicator">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -446,34 +501,19 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
             <button
               onClick={handleSendMessage}
               disabled={!input.trim()}
-              style={{
-                padding: '14px 28px',
-                fontSize: '15px',
-                fontWeight: '600',
-                border: 'none',
-                borderRadius: '12px',
-                background: input.trim() 
-                  ? 'linear-gradient(135deg, #38BDF8, #22D3EE)' 
-                  : 'rgba(100, 100, 100, 0.5)',
-                color: input.trim() ? 'white' : 'rgba(255, 255, 255, 0.3)',
-                cursor: input.trim() ? 'pointer' : 'not-allowed',
-                transition: 'all 0.2s',
-                boxShadow: input.trim() ? '0 4px 12px rgba(56, 189, 248, 0.3)' : 'none'
-              }}
-              onMouseEnter={(e) => {
-                if (input.trim()) {
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(56, 189, 248, 0.4)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = input.trim() 
-                  ? '0 4px 12px rgba(56, 189, 248, 0.3)' 
-                  : 'none'
-              }}
+              className={`send-button ${input.trim() ? 'enabled' : 'disabled'}`}
+              title={isTyping ? 'Sending...' : 'Send message'}
             >
-              {isTyping ? 'Sending...' : 'Send'}
+              {isTyping ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="loading-spinner">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" opacity="0.3"/>
+                  <path d="M12 2A10 10 0 0 1 22 12" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="paper-plane-icon">
+                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                </svg>
+              )}
             </button>
           </div>
         </div>

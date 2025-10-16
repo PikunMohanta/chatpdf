@@ -105,7 +105,7 @@ uvicorn main:socket_app --reload --host 0.0.0.0 --port 8000
 **Terminal 2 - Frontend:**
 ```bash
 cd frontend
-npm run dev
+npm start
 ```
 
 ### Access the Application

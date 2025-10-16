@@ -4,11 +4,11 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: newchat-postgres
+    container_name: pdfpixie-postgres
     environment:
-      POSTGRES_DB: newchat
-      POSTGRES_USER: newchat_user
-      POSTGRES_PASSWORD: newchat_password
+      POSTGRES_DB: pdfpixie
+      POSTGRES_USER: pdfpixie_user
+      POSTGRES_PASSWORD: pdfpixie_password
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -16,7 +16,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U newchat_user -d newchat"]
+      test: ["CMD-SHELL", "pg_isready -U pdfpixie_user -d pdfpixie"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,7 +24,7 @@ services:
   # Redis Cache
   redis:
     image: redis:7-alpine
-    container_name: newchat-redis
+    container_name: pdfpixie-redis
     ports:
       - "6379:6379"
     volumes:
@@ -40,10 +40,10 @@ services:
     build:
       context: ../backend
       dockerfile: ../docker/Dockerfile.backend
-    container_name: newchat-backend
+    container_name: pdfpixie-backend
     environment:
       - DEBUG=True
-      - DATABASE_URL=postgresql://newchat_user:newchat_password@postgres:5432/newchat
+      - DATABASE_URL=postgresql://pdfpixie_user:pdfpixie_password@postgres:5432/pdfpixie
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
@@ -52,7 +52,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-key}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-your-aws-key}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-your-aws-secret}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-newchat-dev-bucket}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-pdfpixie-dev-bucket}
     ports:
       - "8000:8000"
     volumes:
@@ -77,7 +77,7 @@ services:
     build:
       context: ../frontend
       dockerfile: ../docker/Dockerfile.frontend
-    container_name: newchat-frontend
+    container_name: pdfpixie-frontend
     ports:
       - "80:80"
     depends_on:
@@ -94,17 +94,17 @@ services:
     build:
       context: ../backend
       dockerfile: ../docker/Dockerfile.backend
-    container_name: newchat-celery-worker
+    container_name: pdfpixie-celery-worker
     command: celery -A app.celery_app worker --loglevel=info
     environment:
-      - DATABASE_URL=postgresql://newchat_user:newchat_password@postgres:5432/newchat
+      - DATABASE_URL=postgresql://pdfpixie_user:pdfpixie_password@postgres:5432/pdfpixie
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
       - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-key}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-your-aws-key}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-your-aws-secret}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-newchat-dev-bucket}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-pdfpixie-dev-bucket}
     volumes:
       - ../backend:/app
       - backend_data:/app/data
@@ -124,4 +124,4 @@ volumes:
 
 networks:
   default:
-    name: newchat-network
+    name: pdfpixie-network

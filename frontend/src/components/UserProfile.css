@@ -13,7 +13,8 @@
 }
 
 .profile-avatar:hover {
-  border-color: var(--primary-color);
+  border-color: #3B82F6;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
 }
 
 .avatar-image {
@@ -36,11 +37,14 @@
   top: calc(100% + 8px);
   right: 0;
   width: 280px;
-  background: white;
+  background: #1E293B;
+  border: 1px solid rgba(71, 85, 105, 0.4);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-xl);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 8px 25px rgba(0, 0, 0, 0.2);
   z-index: 1000;
   overflow: hidden;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .dropdown-header {
@@ -48,14 +52,14 @@
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-lg);
-  background: var(--bg-secondary);
+  background: linear-gradient(135deg, #334155 0%, #1E293B 100%);
 }
 
 .dropdown-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid white;
+  border: 2px solid #3B82F6;
 }
 
 .dropdown-user-info {
@@ -66,13 +70,13 @@
 .dropdown-name {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #F1F5F9;
   margin-bottom: var(--spacing-xs);
 }
 
 .dropdown-email {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: #CBD5E1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -80,7 +84,7 @@
 
 .dropdown-divider {
   height: 1px;
-  background: var(--border-color);
+  background: rgba(71, 85, 105, 0.4);
   margin: 0;
 }
 
@@ -95,11 +99,17 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md);
   font-size: 0.875rem;
-  color: var(--text-primary);
+  color: #F1F5F9;
   border-radius: var(--radius-md);
   transition: all var(--transition-base);
   cursor: pointer;
   text-align: left;
+}
+
+.dropdown-item:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: #FFFFFF;
+  transform: translateX(2px);
 }
 
 .dropdown-item svg {
@@ -107,9 +117,14 @@
 }
 
 .dropdown-item.logout {
-  color: var(--error-color);
+  color: #EF4444;
 }
 
 .dropdown-item.logout svg {
-  color: var(--error-color);
+  color: #EF4444;
+}
+
+.dropdown-item.logout:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #FECACA;
 }

@@ -115,8 +115,8 @@ setup_services() {
     sleep 10
     
     echo "✅ Development services are running!"
-    echo "📊 PGAdmin: http://localhost:5050 (admin@newchat.dev / admin)"
-    echo "🔧 Redis Commander: http://localhost:8081"
+    echo "📊 PostgreSQL: localhost:5432"
+    echo "🔧 Redis: localhost:6379"
 }
 
 # Create necessary directories

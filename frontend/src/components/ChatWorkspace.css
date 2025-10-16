@@ -71,10 +71,39 @@
   gap: 32px;
 }
 
+.welcome-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.welcome-app-name {
+  font-size: 4rem;
+  font-weight: 800;
+  margin: 0;
+  text-align: center;
+  letter-spacing: -0.03em;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1;
+}
+
+.app-name-pdf {
+  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1E40AF 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-right: 0.1em;
+}
+
+.app-name-pixie {
+  color: #3B82F6;
+}
+
 .empty-state-title {
-  font-size: 2.5rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
+  font-size: 2rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
   margin: 0;
   text-align: center;
   letter-spacing: -0.02em;
@@ -127,10 +156,10 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--spacing-xl);
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(var(--blur-lg));
   -webkit-backdrop-filter: blur(var(--blur-lg));
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.4);
   box-shadow: var(--shadow-md);
   z-index: 100;
   position: relative;
@@ -153,11 +182,15 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-lg);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
   transition: var(--transition-bounce);
   cursor: pointer;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .sidebar-toggle::before {
@@ -173,12 +206,14 @@
   position: relative;
   z-index: 1;
   transition: var(--transition-base);
+  stroke-width: 2.5;
 }
 
 .sidebar-toggle:hover {
-  background: var(--primary-light);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
   transform: scale(1.05);
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .sidebar-toggle:hover::before {
@@ -186,14 +221,22 @@
 }
 
 .workspace-title {
-  font-size: 1.625rem;
-  font-weight: 800;
-  background: var(--gradient-primary);
+  font-family: 'Zen Serif', serif;
+  font-size: 1.85rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 25%, #22D3EE 50%, #FACC15 75%, #F59E0B 100%);
+  background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   margin: 0;
   letter-spacing: -0.02em;
+  text-align: center;
+  user-select: none;
+  position: relative;
+  animation: logo-gradient-flow 4s ease-in-out infinite;
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
 .workspace-content {
@@ -217,7 +260,7 @@
 
 .chat-panel-container {
   flex-shrink: 0;
-  background: white;
+  background: #0F172A;
   overflow: hidden;
   transition: width 0.1s ease-out;
 }
@@ -264,13 +307,13 @@
   position: absolute;
   width: 24px;
   height: 48px;
-  background: white;
-  border: 1px solid var(--border-color);
+  background: #1E293B;
+  border: 1px solid rgba(71, 85, 105, 0.4);
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: #9CA3AF;
   box-shadow: var(--shadow-sm);
   opacity: 0;
   transition: all 0.2s ease;
@@ -316,42 +359,57 @@
 }
 
 /* PDF Toggle Button */
-.pdf-toggle-button {
+
+
+@keyframes logo-gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.floating-new-chat-button {
   position: fixed;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
+  bottom: 24px;
+  left: 24px;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 2px solid var(--border-light);
-  border-radius: var(--radius-xl);
-  color: var(--text-primary);
+  background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 100;
-  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+  animation: floating-pulse 3s ease-in-out infinite;
 }
 
-.pdf-toggle-button:hover {
-  background: var(--gradient-primary);
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow-2xl);
-  transform: translateY(-50%) scale(1.1);
+.floating-new-chat-button:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+  transform: translateY(-4px) scale(1.1);
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.6);
 }
 
-.pdf-toggle-button.pdf-hidden {
-  right: 20px;
+.floating-new-chat-button:active {
+  transform: translateY(-2px) scale(1.05);
 }
 
-.pdf-toggle-button:active {
-  transform: translateY(-50%) scale(0.95);
+@keyframes floating-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 25px rgba(59, 130, 246, 0.6);
+  }
 }
 
 @media (max-width: 1200px) {
@@ -463,6 +521,10 @@
   }
 
   /* Empty State Mobile Adjustments */
+  .welcome-app-name {
+    font-size: 2.5rem;
+  }
+
   .empty-state-title {
     font-size: 1.75rem;
   }
@@ -499,6 +561,10 @@
 
   .pdf-viewer-container {
     height: 45%;
+  }
+
+  .welcome-app-name {
+    font-size: 2rem;
   }
 
   .empty-state-title {

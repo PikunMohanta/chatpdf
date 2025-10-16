@@ -19,6 +19,7 @@ export interface ChatSession {
   created_at: string
   updated_at: string
   preview_message?: string
+  last_message_preview?: string
 }
 
 function App() {
@@ -93,6 +94,26 @@ function App() {
     localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
   }
 
+  const handleUpdatePreviewMessage = (sessionId: string, previewMessage: string) => {
+    const updatedSessions = chatSessions.map(session => 
+      session.session_id === sessionId 
+        ? { ...session, preview_message: previewMessage, updated_at: new Date().toISOString() }
+        : session
+    )
+    setChatSessions(updatedSessions)
+    localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
+  }
+
+  const handleUpdateLastMessage = (sessionId: string, lastMessage: string) => {
+    const updatedSessions = chatSessions.map(session => 
+      session.session_id === sessionId 
+        ? { ...session, last_message_preview: lastMessage, updated_at: new Date().toISOString() }
+        : session
+    )
+    setChatSessions(updatedSessions)
+    localStorage.setItem('chat_sessions', JSON.stringify(updatedSessions))
+  }
+
   const handleUpdateSessionId = (documentId: string, newSessionId: string) => {
     console.log('📌 App.tsx: Updating session ID for document', documentId, 'to', newSessionId)
     console.log('📋 Current sessions:', chatSessions.map(s => ({ doc: s.document_id, session: s.session_id })))
@@ -125,6 +146,8 @@ function App() {
             onDeleteSession={handleDeleteSession}
             onUpdateChatName={handleUpdateChatName}
             onUpdateSessionId={handleUpdateSessionId}
+            onUpdatePreviewMessage={handleUpdatePreviewMessage}
+            onUpdateLastMessage={handleUpdateLastMessage}
           />
         } />
         <Route path="/chat" element={
@@ -136,6 +159,8 @@ function App() {
             onDeleteSession={handleDeleteSession}
             onUpdateChatName={handleUpdateChatName}
             onUpdateSessionId={handleUpdateSessionId}
+            onUpdatePreviewMessage={handleUpdatePreviewMessage}
+            onUpdateLastMessage={handleUpdateLastMessage}
           />
         } />
       </Routes>

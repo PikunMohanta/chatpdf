@@ -6,7 +6,6 @@ import './Sidebar.css'
 interface SidebarProps {
   chatSessions: ChatSession[]
   currentSessionId: string
-  onNewChat: () => void
   onSelectSession: (session: ChatSession) => void
   onDeleteSession: (sessionId: string) => void
   onUpdateChatName?: (sessionId: string, newName: string) => void
@@ -15,7 +14,6 @@ interface SidebarProps {
 const Sidebar = ({
   chatSessions,
   currentSessionId,
-  onNewChat,
   onSelectSession,
   onDeleteSession,
   onUpdateChatName,
@@ -124,16 +122,6 @@ const Sidebar = ({
 
   return (
     <div className="sidebar">
-      <motion.button
-        className="new-chat-button"
-        onClick={onNewChat}
-        whileHover={{ scale: 1.02, boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)' }}
-        whileTap={{ scale: 0.98 }}
-      >
-        <span className="new-chat-icon">+</span>
-        New Chat
-      </motion.button>
-
       <div className="chat-history">
         <div className="chat-history-list">
           {chatSessions.length === 0 ? (
@@ -150,7 +138,8 @@ const Sidebar = ({
                 <h3 className="time-group-title">{timeGroup}</h3>
                 {sessions.map((session) => {
               const isEditing = editingSessionId === session.session_id
-              const displayName = session.chat_name || `Chat about ${session.document_name}`
+              const displayName = session.chat_name || session.preview_message || `Chat about ${session.document_name}`
+              const lastMessagePreview = session.last_message_preview
               
               return (
                 <motion.div
@@ -182,7 +171,12 @@ const Sidebar = ({
                         />
                       </div>
                     ) : (
-                      <p className="session-chat-name">{displayName}</p>
+                      <div className="session-content">
+                        <p className="session-chat-name">{displayName}</p>
+                        {lastMessagePreview && (
+                          <p className="session-message-preview">{lastMessagePreview}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                   

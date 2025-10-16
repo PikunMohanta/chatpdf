@@ -1,7 +1,7 @@
 {
   "name": "pdfpixie-frontend",
   "version": "1.0.0",
-  "description": "PDFPixie - Your intelligent PDF document companion",
+  "description": "PDFPixie - AI-Powered PDF Chat Application",
   "type": "module",
   "scripts": {
     "dev": "vite",

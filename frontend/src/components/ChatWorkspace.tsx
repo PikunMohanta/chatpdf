@@ -9,13 +9,15 @@ import { DocumentInfo, ChatSession } from '../App'
 import './ChatWorkspace.css'
 
 interface ChatWorkspaceProps {
-  currentDocument: DocumentInfo | null
+  currentDocument: DocumentInfo
   chatSessions: ChatSession[]
   onNewChat: () => void
   onSelectSession: (session: ChatSession) => void
   onDeleteSession: (sessionId: string) => void
   onUpdateChatName?: (sessionId: string, newName: string) => void
   onUpdateSessionId?: (documentId: string, newSessionId: string) => void
+  onUpdatePreviewMessage?: (sessionId: string, previewMessage: string) => void
+  onUpdateLastMessage?: (sessionId: string, lastMessage: string) => void
 }
 
 const ChatWorkspace = ({
@@ -26,6 +28,8 @@ const ChatWorkspace = ({
   onDeleteSession,
   onUpdateChatName,
   onUpdateSessionId,
+  onUpdatePreviewMessage,
+  onUpdateLastMessage,
 }: ChatWorkspaceProps) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true) // Start collapsed by default
   const [highlightedPage, setHighlightedPage] = useState<number | null>(null)
@@ -42,12 +46,59 @@ const ChatWorkspace = ({
   }
 
   const generateChatName = (query: string): string => {
-    // Take first 5-6 words from the query
-    const words = query.trim().split(/\s+/)
-    const summary = words.slice(0, 6).join(' ')
+    const lowercaseQuery = query.toLowerCase().trim()
     
-    // Add ellipsis if query was longer
-    return words.length > 6 ? `${summary}...` : summary
+    // Smart title generation based on query intent
+    if (lowercaseQuery.includes('summarize') || lowercaseQuery.includes('summary')) {
+      const topic = extractTopicFromQuery(query, ['summarize', 'summary', 'give me a summary of', 'can you summarize'])
+      return `Summary: ${topic}`
+    }
+    
+    if (lowercaseQuery.includes('explain') || lowercaseQuery.includes('what is') || lowercaseQuery.includes('what are')) {
+      const topic = extractTopicFromQuery(query, ['explain', 'what is', 'what are', 'tell me about'])
+      return `Explanation: ${topic}`
+    }
+    
+    if (lowercaseQuery.includes('list') || lowercaseQuery.includes('find') || lowercaseQuery.includes('show me')) {
+      const topic = extractTopicFromQuery(query, ['list', 'find', 'show me', 'get me'])
+      return `Analysis: ${topic}`
+    }
+    
+    if (lowercaseQuery.includes('how') || lowercaseQuery.includes('process') || lowercaseQuery.includes('method')) {
+      const topic = extractTopicFromQuery(query, ['how', 'process', 'method', 'procedure'])
+      return `Guide: ${topic}`
+    }
+    
+    if (lowercaseQuery.includes('compare') || lowercaseQuery.includes('difference') || lowercaseQuery.includes('vs')) {
+      const topic = extractTopicFromQuery(query, ['compare', 'difference', 'vs', 'versus'])
+      return `Comparison: ${topic}`
+    }
+    
+    // Default: Extract key topic and create natural title
+    const words = query.trim().split(/\s+/)
+    const keyTopic = words.slice(0, 4).join(' ')
+    return words.length > 4 ? `${keyTopic}...` : keyTopic
+  }
+
+  const extractTopicFromQuery = (query: string, triggers: string[]): string => {
+    let cleanQuery = query.trim()
+    
+    // Remove common trigger words
+    triggers.forEach(trigger => {
+      const regex = new RegExp(`\\b${trigger}\\b`, 'gi')
+      cleanQuery = cleanQuery.replace(regex, '').trim()
+    })
+    
+    // Remove common connecting words
+    cleanQuery = cleanQuery.replace(/\b(about|the|of|in|on|for|with|from|to|a|an)\b/gi, ' ')
+    cleanQuery = cleanQuery.replace(/\s+/g, ' ').trim()
+    
+    // Take first 3-4 meaningful words
+    const words = cleanQuery.split(/\s+/).filter(word => word.length > 2)
+    const topic = words.slice(0, 3).join(' ')
+    
+    // Capitalize first letter
+    return topic.charAt(0).toUpperCase() + topic.slice(1)
   }
 
   const handleGenerateChatName = (query: string) => {
@@ -209,7 +260,6 @@ const ChatWorkspace = ({
                 <Sidebar
                   chatSessions={chatSessions}
                   currentSessionId=""
-                  onNewChat={onNewChat}
                   onSelectSession={onSelectSession}
                   onDeleteSession={onDeleteSession}
                   onUpdateChatName={onUpdateChatName}
@@ -224,8 +274,57 @@ const ChatWorkspace = ({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
+              className="welcome-content"
             >
-              <h1 className="empty-state-title">What can I help with?</h1>
+              <motion.h1
+                className="welcome-app-name"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{
+                  duration: 1,
+                  ease: 'easeOut',
+                  delay: 0.2,
+                }}
+              >
+                <motion.span
+                  className="app-name-pdf"
+                  animate={{
+                    textShadow: [
+                      '0 0 20px rgba(59, 130, 246, 0.5)',
+                      '0 0 40px rgba(59, 130, 246, 0.8)',
+                      '0 0 20px rgba(59, 130, 246, 0.5)',
+                    ],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  PDF
+                </motion.span>
+                <motion.span
+                  className="app-name-pixie"
+                  animate={{
+                    color: ['#3B82F6', '#60A5FA', '#3B82F6'],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                >
+                  Pixie
+                </motion.span>
+              </motion.h1>
+              <motion.h2
+                className="empty-state-title"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                What can I help with?
+              </motion.h2>
             </motion.div>
 
             {/* File Input (hidden) */}
@@ -315,7 +414,6 @@ const ChatWorkspace = ({
               <Sidebar
                 chatSessions={chatSessions}
                 currentSessionId={currentDocument.document_id}
-                onNewChat={onNewChat}
                 onSelectSession={onSelectSession}
                 onDeleteSession={onDeleteSession}
                 onUpdateChatName={onUpdateChatName}
@@ -338,6 +436,10 @@ const ChatWorkspace = ({
               onGenerateChatName={handleGenerateChatName}
               onSessionIdReceived={handleSessionIdReceived}
               onUploadClick={handleAttachClick}
+              onUpdatePreviewMessage={onUpdatePreviewMessage}
+              onUpdateLastMessage={onUpdateLastMessage}
+              onShowPdf={() => setPdfHidden(false)}
+              pdfHidden={pdfHidden}
             />
           </div>
 
@@ -364,30 +466,27 @@ const ChatWorkspace = ({
                   documentId={currentDocument.document_id}
                   filename={currentDocument.filename}
                   highlightedPage={highlightedPage}
+                  onHidePdf={() => setPdfHidden(true)}
                 />
               </div>
             </>
           )}
 
-          {/* PDF Show/Hide Toggle Button */}
-          <motion.button
-            className={`pdf-toggle-button ${pdfHidden ? 'pdf-hidden' : ''}`}
-            onClick={() => setPdfHidden(!pdfHidden)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            title={pdfHidden ? 'Show PDF' : 'Hide PDF'}
-          >
-            {pdfHidden ? (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-              </svg>
-            )}
-          </motion.button>
+
         </div>
+
+        {/* Floating New Chat Button */}
+        <motion.button
+          className="floating-new-chat-button"
+          onClick={onNewChat}
+          whileHover={{ scale: 1.1, boxShadow: '0 8px 25px rgba(59, 130, 246, 0.3)' }}
+          whileTap={{ scale: 0.95 }}
+          title="Start New Chat"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
+          </svg>
+        </motion.button>
       </div>
     </div>
   )

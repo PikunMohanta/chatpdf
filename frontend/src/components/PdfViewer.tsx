@@ -13,9 +13,10 @@ interface PdfViewerProps {
   documentId: string
   filename: string
   highlightedPage: number | null
+  onHidePdf?: () => void
 }
 
-const PdfViewer = ({ documentId, filename, highlightedPage }: PdfViewerProps) => {
+const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfViewerProps) => {
   const [numPages, setNumPages] = useState<number>(0)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -207,6 +208,21 @@ const PdfViewer = ({ documentId, filename, highlightedPage }: PdfViewerProps) =>
               <path strokeLinecap="round" strokeWidth="2" d="M21 21l-4.35-4.35" />
             </svg>
           </motion.button>
+
+          {/* PDF Hide Button */}
+          {onHidePdf && (
+            <motion.button
+              className="toolbar-button hide-pdf-button"
+              onClick={onHidePdf}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Hide PDF"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </motion.button>
+          )}
         </div>
       </div>
 
@@ -220,7 +236,6 @@ const PdfViewer = ({ documentId, filename, highlightedPage }: PdfViewerProps) =>
                 ref={(el) => (pageRefs.current[pageNum] = el)}
                 className={`page-wrapper ${highlightedPage === pageNum ? 'page-highlighted' : ''}`}
               >
-                <div className="page-number-label">Page {pageNum}</div>
                 <Page
                   pageNumber={pageNum}
                   scale={scale}

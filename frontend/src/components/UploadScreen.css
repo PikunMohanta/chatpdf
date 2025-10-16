@@ -75,11 +75,11 @@
 }
 
 .dropzone {
-  border: 3px dashed rgba(255, 255, 255, 0.3);
+  border: 3px dashed rgba(59, 130, 246, 0.4);
   border-radius: var(--radius-2xl);
   padding: var(--spacing-4xl);
   text-align: center;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(var(--blur-xl));
   -webkit-backdrop-filter: blur(var(--blur-xl));
   cursor: pointer;

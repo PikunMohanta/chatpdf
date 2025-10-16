@@ -89,8 +89,8 @@
   padding: var(--spacing-lg) var(--spacing-3xl);
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--primary-color);
-  background: white;
+  color: #F1F5F9;
+  background: #3B82F6;
   border-radius: var(--radius-full);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   transition: var(--transition-bounce);
