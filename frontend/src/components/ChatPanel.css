@@ -40,6 +40,9 @@
   position: relative;
   z-index: 10;
   transition: var(--transition-base);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .chat-header::after {
@@ -56,6 +59,31 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.show-pdf-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.show-pdf-button:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #1E3A8A 100%);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.show-pdf-button svg {
+  flex-shrink: 0;
 }
 
 .chat-title {

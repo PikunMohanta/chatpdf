@@ -145,8 +145,11 @@ const Sidebar = ({
                 <motion.div
                   key={session.session_id}
                   className={`chat-session-item ${session.document_id === currentSessionId ? 'active' : ''}`}
-                  onClick={() => !isEditing && onSelectSession(session)}
-                  whileHover={{ x: 4, backgroundColor: 'rgba(79, 70, 229, 0.05)' }}
+                  onClick={(e) => {
+                    if (!isEditing && !e.defaultPrevented) {
+                      onSelectSession(session)
+                    }
+                  }}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -172,10 +175,10 @@ const Sidebar = ({
                       </div>
                     ) : (
                       <div className="session-content">
-                        <p className="session-chat-name">{displayName}</p>
-                        {lastMessagePreview && (
-                          <p className="session-message-preview">{lastMessagePreview}</p>
-                        )}
+                        <div className="chat-title-wrapper">
+                          <p className="session-chat-name">{displayName}</p>
+                          <span className="status-dot connected"></span>
+                        </div>
                       </div>
                     )}
                   </div>

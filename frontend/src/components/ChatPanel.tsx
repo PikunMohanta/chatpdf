@@ -301,6 +301,25 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
             <div className="status-dot connected" />
           </h3>
         </div>
+        
+        {/* Show PDF Button when PDF is hidden */}
+        {pdfHidden && onShowPdf && (
+          <motion.button
+            className="show-pdf-button"
+            onClick={onShowPdf}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Show PDF"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
+            Show PDF
+          </motion.button>
+        )}
       </div>
 
       <div className="messages-container">
