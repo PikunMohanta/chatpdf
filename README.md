@@ -181,6 +181,14 @@ CHROMA_DIR=./data/chromadb
 CHAT_HISTORY_DIR=./data/chat_history
 ```
 
+Create `.env.local` file in `frontend/` directory for custom overrides:
+
+```env
+# Development options
+VITE_ENABLE_TEST_DOCUMENT=false  # Set to 'true' to auto-load sample PDFs (development only)
+VITE_ENABLE_DEBUG=true           # Enable console debugging
+```
+
 The application works in **development mode** without any API keys:
 - ✅ Local file storage for PDFs
 - ✅ ChromaDB for local embeddings
@@ -210,6 +218,7 @@ npm run preview                     # Preview production build
 - 💡 Frontend runs on port 3000 (not 3001)
 - 🔄 Backend uses async Socket.IO for real-time communication
 - 💾 Chat history automatically persists to SQLite database
+- 🧹 **Clear localStorage**: If you see old test documents, open browser console and run `clearPDFPixieData()` to reset
 
 ## 🐳 Docker Deployment
 

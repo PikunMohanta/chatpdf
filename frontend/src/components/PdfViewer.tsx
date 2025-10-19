@@ -2,12 +2,30 @@ import { useState, useEffect, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { motion } from 'framer-motion'
 import axios from 'axios'
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css'
-import 'react-pdf/dist/esm/Page/TextLayer.css'
+import 'react-pdf/dist/Page/AnnotationLayer.css'
+import 'react-pdf/dist/Page/TextLayer.css'
 import './PdfViewer.css'
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+// Configure PDF.js worker with fallback options
+const configurePdfWorker = () => {
+  try {
+    // First try to use the local worker file
+    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+    console.log('✅ PDF worker configured with local file')
+  } catch (error) {
+    console.warn('Failed to set local PDF worker, falling back to CDN:', error)
+    try {
+      // Fallback to CDN version if local fails
+      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+      console.log('✅ PDF worker configured with CDN fallback')
+    } catch (fallbackError) {
+      console.error('❌ Failed to configure PDF worker:', fallbackError)
+    }
+  }
+}
+
+// Initialize worker
+configurePdfWorker()
 
 interface PdfViewerProps {
   documentId: string
@@ -25,12 +43,20 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
   const [pageInputValue, setPageInputValue] = useState<string>('')
   const pageRefs = useRef<{ [key: number]: HTMLDivElement | null }>({})
   const containerRef = useRef<HTMLDivElement>(null)
+  const isMountedRef = useRef(true)
 
   useEffect(() => {
+    isMountedRef.current = true
+
     const loadPdf = async () => {
       try {
+        if (!isMountedRef.current) return
+
         setLoading(true)
         setError(null)
+
+        console.log(`🔍 Attempting to load PDF with document ID: ${documentId}`)
+        console.log(`📍 Request URL: http://localhost:8000/api/pdf/${documentId}`)
 
         const response = await axios.get(
           `http://localhost:8000/api/pdf/${documentId}`,
@@ -42,19 +68,49 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
           }
         )
 
+        if (!isMountedRef.current) return
+
+        console.log('✅ PDF loaded successfully, blob size:', response.data.size)
         const url = URL.createObjectURL(response.data)
         setPdfUrl(url)
         setLoading(false)
-      } catch (err) {
-        console.error('Error loading PDF:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load PDF')
+      } catch (err: any) {
+        if (!isMountedRef.current) return
+
+        console.error('❌ Error loading PDF:', err)
+        console.error('❌ Error details:', {
+          status: err.response?.status,
+          statusText: err.response?.statusText,
+          data: err.response?.data,
+          message: err.message
+        })
+        
+        let errorMessage = 'Failed to load PDF'
+        if (err.response?.status === 404) {
+          errorMessage = `PDF document not found (ID: ${documentId})`
+        } else if (err.response?.status === 401) {
+          errorMessage = 'Authentication failed'
+        } else if (err.response?.data) {
+          errorMessage = `Server error: ${err.response.data.detail || err.response.statusText}`
+        }
+        
+        setError(errorMessage)
         setLoading(false)
       }
     }
 
-    loadPdf()
+    if (documentId && !documentId.startsWith('new_chat_')) {
+      loadPdf()
+    } else {
+      console.log('🚫 Skipping PDF load for document ID:', documentId)
+      if (isMountedRef.current) {
+        setLoading(false)
+        setError(documentId?.startsWith('new_chat_') ? 'Please upload a PDF document first' : 'No document selected')
+      }
+    }
 
     return () => {
+      isMountedRef.current = false
       if (pdfUrl) {
         URL.revokeObjectURL(pdfUrl)
       }
@@ -67,8 +123,34 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
     }
   }, [highlightedPage])
 
+  // Cleanup effect to handle component unmounting
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+      // Clean up any pending PDF operations
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl)
+      }
+    }
+  }, [])
+
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
-    setNumPages(numPages)
+    if (isMountedRef.current) {
+      setNumPages(numPages)
+    }
+  }
+
+  const onDocumentLoadError = (error: Error) => {
+    console.error('❌ PDF Document load error:', error)
+    if (isMountedRef.current) {
+      setError(`Failed to load PDF document: ${error.message}`)
+      setLoading(false)
+    }
+  }
+
+  const onPageLoadError = (error: Error) => {
+    console.error('❌ PDF Page load error:', error)
+    // Don't set error state for individual page errors to avoid breaking the entire document
   }
 
   const scrollToPage = (pageNum: number) => {
@@ -128,7 +210,20 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
   if (error || !pdfUrl) {
     return (
       <div className="pdf-viewer error">
-        <p>⚠️ {error || 'Failed to load PDF'}</p>
+        <div className="error-content">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="error-icon">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <p>⚠️ {error || 'Failed to load PDF'}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="retry-button"
+          >
+            Retry Loading
+          </button>
+        </div>
       </div>
     )
   }
@@ -227,7 +322,36 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
       </div>
 
       <div className="pdf-document-container" ref={containerRef}>
-        <Document file={pdfUrl} onLoadSuccess={onDocumentLoadSuccess} className="pdf-document">
+        <Document 
+          file={pdfUrl} 
+          onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={onDocumentLoadError}
+          className="pdf-document"
+          loading={
+            <div className="pdf-page-loading">
+              <div className="loading-spinner-small">
+                <svg width="24" height="24" viewBox="0 0 60 60">
+                  <circle
+                    cx="30"
+                    cy="30"
+                    r="25"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                    strokeDasharray="157"
+                    strokeDashoffset="40"
+                  />
+                </svg>
+              </div>
+              <p>Loading PDF document...</p>
+            </div>
+          }
+          error={
+            <div className="pdf-page-error">
+              <p>⚠️ Failed to load PDF document</p>
+            </div>
+          }
+        >
           {Array.from(new Array(numPages), (_, index) => {
             const pageNum = index + 1
             return (
@@ -241,6 +365,17 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
                   scale={scale}
                   renderTextLayer={true}
                   renderAnnotationLayer={true}
+                  onLoadError={onPageLoadError}
+                  loading={
+                    <div className="pdf-page-loading">
+                      <div className="loading-spinner-small">Loading...</div>
+                    </div>
+                  }
+                  error={
+                    <div className="pdf-page-error">
+                      <p>⚠️ Failed to load page {pageNum}</p>
+                    </div>
+                  }
                 />
               </div>
             )

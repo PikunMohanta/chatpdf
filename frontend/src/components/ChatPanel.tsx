@@ -8,7 +8,6 @@ interface Message {
   text: string
   from: 'user' | 'ai'
   timestamp: Date
-  sources?: Array<{ page: number; text: string }>
 }
 
 interface ChatPanelProps {
@@ -26,7 +25,7 @@ interface ChatPanelProps {
   pdfHidden?: boolean
 }
 
-const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick, onGenerateChatName, onSessionIdReceived, onUploadClick, onUpdatePreviewMessage, onUpdateLastMessage, onShowPdf, pdfHidden }: ChatPanelProps) => {
+const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClick: _onSourceClick, onGenerateChatName, onSessionIdReceived, onUploadClick, onUpdatePreviewMessage, onUpdateLastMessage, onShowPdf, pdfHidden }: ChatPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -82,7 +81,7 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
       if (!sessionId || sessionId.startsWith('temp_')) {
         console.log('📄 Temporary or no session ID - starting fresh chat')
         setMessages([])
-        setCurrentSessionId(sessionId)
+        setCurrentSessionId(sessionId || '')
         return
       }
 
@@ -305,21 +304,22 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
         {/* Show PDF Button when PDF is hidden */}
         {pdfHidden && onShowPdf && (
           <motion.button
-            className="show-pdf-button"
+            className="show-pdf-button-chat-header"
             onClick={onShowPdf}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             title="Show PDF"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
             Show PDF
           </motion.button>
         )}
+
       </div>
 
       <div className="messages-container">
@@ -387,44 +387,8 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
                 >
-                  <div className="message-avatar">
-                    {message.from === 'user' ? (
-                      <img
-                        src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-                        alt="User"
-                        className="avatar"
-                      />
-                    ) : (
-                      <div className="ai-avatar">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-
                   <div className="message-content">
                     <p className="message-text">{message.text}</p>
-                    {message.sources && message.sources.length > 0 && (
-                      <div className="message-sources">
-                        {message.sources.map((source, idx) => (
-                          <motion.button
-                            key={idx}
-                            className="source-chip"
-                            onClick={() => onSourceClick(source.page)}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            Page {source.page}
-                          </motion.button>
-                        ))}
-                      </div>
-                    )}
                     <span className="message-time">
                       {message.timestamp.toLocaleTimeString('en-US', {
                         hour: 'numeric',
@@ -442,18 +406,6 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <div className="message-avatar">
-                  <div className="ai-avatar">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                      />
-                    </svg>
-                  </div>
-                </div>
                 <div className="message-content">
                   <div className="ai-thinking-container">
                     <div className="thinking-text">💭 AI is thinking...</div>
@@ -537,6 +489,8 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
           </div>
         </div>
       )}
+
+
       
     </div>
   )

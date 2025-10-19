@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List, Dict, Optional, Any
 import json
@@ -32,7 +33,16 @@ from .auth import verify_token, UserInfo
 from .chat_history_db import chat_history_manager, ChatMessage as HistoryChatMessage, ChatSession as HistoryChatSession
 
 router = APIRouter()
+security = HTTPBearer()
 logger = logging.getLogger(__name__)
+
+# Dependency function for user authentication with request context
+async def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> UserInfo:
+    """Get current user with session isolation based on request context"""
+    return await verify_token(credentials, request)
 
 # Pydantic models
 class ChatMessage(BaseModel):
@@ -373,7 +383,7 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
 @router.post("/query", response_model=ChatResponse)
 async def chat_query(
     request: ChatRequest,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Process a chat query and return AI response
@@ -427,13 +437,28 @@ async def chat_query(
         logger.error(f"Error processing chat query: {e}")
         raise HTTPException(status_code=500, detail="Failed to process chat query")
 
+# Compatibility endpoint for /sessions (redirects to /sessions/all)
+@router.get("/sessions", response_model=SessionListResponse)
+async def get_user_sessions(current_user: UserInfo = Depends(get_current_user)):
+    """
+    Get all chat sessions for the current user (compatibility endpoint)
+    """
+    try:
+        sessions_data = chat_history_manager.get_all_user_sessions(current_user.user_id)
+        logger.info(f"Retrieved {len(sessions_data)} sessions for user {current_user.user_id}")
+        return SessionListResponse(sessions=sessions_data)
+    except Exception as e:
+        logger.error(f"Error getting user sessions: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve chat sessions")
+
 @router.get("/sessions/all", response_model=SessionListResponse)
-async def get_all_user_sessions(current_user: UserInfo = Depends(verify_token)):
+async def get_all_user_sessions(current_user: UserInfo = Depends(get_current_user)):
     """
     Get all chat sessions for the current user across all documents
     """
     try:
         sessions_data = chat_history_manager.get_all_user_sessions(current_user.user_id)
+        logger.info(f"Retrieved {len(sessions_data)} sessions for user {current_user.user_id}")
         return SessionListResponse(sessions=sessions_data)
     except Exception as e:
         logger.error(f"Error retrieving all user sessions: {e}")
@@ -442,7 +467,7 @@ async def get_all_user_sessions(current_user: UserInfo = Depends(verify_token)):
 @router.get("/sessions/{document_id}", response_model=SessionListResponse)
 async def get_document_chat_sessions(
     document_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Get all chat sessions for a specific document
@@ -457,7 +482,7 @@ async def get_document_chat_sessions(
 @router.get("/sessions/{document_id}/latest", response_model=ChatHistoryResponse)
 async def get_latest_chat_session(
     document_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Get the latest chat session for a document with message history
@@ -515,7 +540,7 @@ async def get_chat_history(
 @router.delete("/sessions/{session_id}")
 async def delete_chat_session(
     session_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Delete a chat session and its message history
@@ -546,7 +571,7 @@ async def delete_chat_session(
 @router.post("/sessions/{session_id}/export")
 async def export_chat_session(
     session_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Export chat session as markdown

@@ -1,3 +1,5 @@
+# PDFPixie Production Docker Compose
+# Complete multi-service production setup with optimized configurations
 version: '3.8'
 
 services:
@@ -6,27 +8,35 @@ services:
     image: postgres:15-alpine
     container_name: pdfpixie-postgres
     environment:
-      POSTGRES_DB: pdfpixie
-      POSTGRES_USER: pdfpixie_user
-      POSTGRES_PASSWORD: pdfpixie_password
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: ${POSTGRES_DB:-pdfpixie}
+      POSTGRES_USER: ${POSTGRES_USER:-pdfpixie_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pdfpixie_password}
+      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_AUTH_METHOD:-scram-sha-256}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pdfpixie_user -d pdfpixie"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pdfpixie_user} -d ${POSTGRES_DB:-pdfpixie}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
 
-  # Redis Cache
+  # Redis Cache & Session Store
   redis:
     image: redis:7-alpine
     container_name: pdfpixie-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -34,32 +44,53 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
 
-  # Backend Service
+  # Backend FastAPI Service
   backend:
     build:
-      context: ../backend
+      context: ./backend
       dockerfile: ../docker/Dockerfile.backend
     container_name: pdfpixie-backend
     environment:
-      - DEBUG=True
-      - DATABASE_URL=postgresql://pdfpixie_user:pdfpixie_password@postgres:5432/pdfpixie
+      # Application settings
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DEBUG=${DEBUG:-false}
+      - SECRET_KEY=${SECRET_KEY:-$(openssl rand -hex 32)}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      
+      # Database configuration
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-pdfpixie_user}:${POSTGRES_PASSWORD:-pdfpixie_password}@postgres:5432/${POSTGRES_DB:-pdfpixie}
+      
+      # Redis configuration
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - FRONTEND_URL=http://localhost:3000
-      - SECRET_KEY=dev-secret-key-change-in-production
+      
+      # AI & External APIs
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-your-openrouter-key}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-key}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-your-aws-key}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-your-aws-secret}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-pdfpixie-dev-bucket}
+      
+      # AWS configuration (optional)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
+      
+      # Performance settings
+      - MAX_WORKERS=${MAX_WORKERS:-1}
+      - WORKER_TIMEOUT=${WORKER_TIMEOUT:-300}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
-      - ../backend:/app
       - backend_data:/app/data
       - backend_logs:/app/logs
-      - backend_venv:/app/.venv  # UV virtual environment cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,58 +101,92 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
 
-  # Frontend Service (for production)
+  # Frontend Nginx Service
   frontend:
     build:
-      context: ../frontend
+      context: ./frontend
       dockerfile: ../docker/Dockerfile.frontend
     container_name: pdfpixie-frontend
     ports:
-      - "80:80"
+      - "${FRONTEND_PORT:-80}:80"
+    environment:
+      - BACKEND_URL=http://backend:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
 
-  # Celery Worker (for background tasks)
+  # Celery Worker for Background Tasks (optional)
   celery-worker:
     build:
-      context: ../backend
+      context: ./backend
       dockerfile: ../docker/Dockerfile.backend
     container_name: pdfpixie-celery-worker
-    command: celery -A app.celery_app worker --loglevel=info
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
     environment:
-      - DATABASE_URL=postgresql://pdfpixie_user:pdfpixie_password@postgres:5432/pdfpixie
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-pdfpixie_user}:${POSTGRES_PASSWORD:-pdfpixie_password}@postgres:5432/${POSTGRES_DB:-pdfpixie}
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-your-openai-key}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-your-aws-key}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-your-aws-secret}
-      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-pdfpixie-dev-bucket}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-your-openrouter-key}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-}
     volumes:
-      - ../backend:/app
       - backend_data:/app/data
+      - backend_logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    profiles:
+      - full # Only start with --profile full
 
+# Named volumes for data persistence
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
   backend_data:
+    driver: local
   backend_logs:
-  backend_venv:
+    driver: local
 
+# Custom network for service communication
 networks:
   default:
     name: pdfpixie-network
+    driver: bridge

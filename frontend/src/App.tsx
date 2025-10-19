@@ -1,7 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import ChatWorkspace from './components/ChatWorkspace'
 import './App.css'
+
+// Lazy load heavy components
+const ChatWorkspace = lazy(() => import('./components/ChatWorkspace'))
+
+// Loading component
+const LoadingFallback = () => (
+  <div className="loading-fallback">
+    <div className="spinner"></div>
+    <p>Loading...</p>
+  </div>
+)
 
 export interface DocumentInfo {
   document_id: string
@@ -28,16 +38,116 @@ function App() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    // Load chat sessions from localStorage or API
-    const savedSessions = localStorage.getItem('chat_sessions')
-    if (savedSessions) {
+    // Load chat sessions from backend API first, then fallback to localStorage
+    const loadChatSessions = async () => {
       try {
-        const sessions = JSON.parse(savedSessions)
-        setChatSessions(sessions)
-      } catch (e) {
-        console.error('Failed to parse chat sessions:', e)
+        console.log('🔄 Loading chat sessions from backend...')
+        const response = await fetch('http://localhost:8000/api/chat/sessions/all', {
+          headers: {
+            'Authorization': 'Bearer dev-token'
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('✅ Loaded sessions from backend:', data.sessions.length)
+          
+          // Transform backend sessions to frontend format
+          const transformedSessions: ChatSession[] = data.sessions.map((session: any) => ({
+            session_id: session.session_id,
+            document_id: session.document_id,
+            document_name: session.document_name || `Document ${session.document_id.slice(0, 8)}`,
+            chat_name: session.chat_name,
+            created_at: session.created_at,
+            updated_at: session.updated_at,
+            preview_message: session.last_message || 'Chat session',
+            last_message_preview: session.last_message
+          }))
+          
+          setChatSessions(transformedSessions)
+          // Also save to localStorage for offline access
+          localStorage.setItem('chat_sessions', JSON.stringify(transformedSessions))
+          return
+        } else {
+          console.warn('⚠️ Failed to load sessions from backend, trying localStorage...')
+        }
+      } catch (error) {
+        console.error('❌ Error loading sessions from backend:', error)
+      }
+      
+      // Fallback to localStorage if backend fails
+      const savedSessions = localStorage.getItem('chat_sessions')
+      if (savedSessions) {
+        try {
+          const sessions = JSON.parse(savedSessions)
+          setChatSessions(sessions)
+          console.log('📱 Loaded sessions from localStorage:', sessions.length)
+        } catch (e) {
+          console.error('Failed to parse chat sessions from localStorage:', e)
+        }
       }
     }
+    
+    loadChatSessions()
+    
+    // Auto-load test document if no sessions exist (ONLY IN DEVELOPMENT MODE)
+    const checkForTestDocument = () => {
+      if (import.meta.env.VITE_ENABLE_TEST_DOCUMENT === 'true') {
+        // Check if we have any sessions after loading
+        setTimeout(() => {
+          if (chatSessions.length === 0) {
+            console.log('🔍 No existing sessions found, creating test session...')
+            
+            // Load test document immediately
+            const loadTestDocument = async () => {
+              try {
+                const response = await fetch('http://localhost:8000/api/debug/test-document', {
+                  headers: {
+                    'Authorization': 'Bearer dev-token'
+                  }
+                })
+                
+                if (!response.ok) {
+                  throw new Error(`HTTP ${response.status}`)
+                }
+                
+                const data = await response.json()
+                console.log('✅ Test document loaded:', data)
+                
+                const testSession: ChatSession = {
+                  session_id: data.document_id,
+                  document_id: data.document_id,
+                  document_name: data.filename,
+                  chat_name: 'Sample Document',
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  preview_message: 'Sample PDF loaded for testing'
+                }
+                
+                setChatSessions([testSession])
+                localStorage.setItem('chat_sessions', JSON.stringify([testSession]))
+                
+                setCurrentDocument({
+                  document_id: data.document_id,
+                  filename: data.filename,
+                  status: 'processed'
+                })
+                
+                console.log('📄 Document set:', data.document_id, data.filename)
+                navigate('/chat')
+                
+              } catch (error) {
+                console.error('❌ Failed to load test document:', error)
+              }
+            }
+            
+            loadTestDocument()
+          }
+        }, 500) // Small delay to allow sessions to load
+      }
+    }
+    
+    checkForTestDocument()
     
     // Start at root (empty state)
     if (window.location.pathname === '/chat' || window.location.pathname === '/') {
@@ -136,34 +246,36 @@ function App() {
 
   return (
     <div className="app-container">
-      <Routes>
-        <Route path="/" element={
-          <ChatWorkspace
-            currentDocument={currentDocument}
-            chatSessions={chatSessions}
-            onNewChat={handleNewChat}
-            onSelectSession={handleSelectSession}
-            onDeleteSession={handleDeleteSession}
-            onUpdateChatName={handleUpdateChatName}
-            onUpdateSessionId={handleUpdateSessionId}
-            onUpdatePreviewMessage={handleUpdatePreviewMessage}
-            onUpdateLastMessage={handleUpdateLastMessage}
-          />
-        } />
-        <Route path="/chat" element={
-          <ChatWorkspace
-            currentDocument={currentDocument}
-            chatSessions={chatSessions}
-            onNewChat={handleNewChat}
-            onSelectSession={handleSelectSession}
-            onDeleteSession={handleDeleteSession}
-            onUpdateChatName={handleUpdateChatName}
-            onUpdateSessionId={handleUpdateSessionId}
-            onUpdatePreviewMessage={handleUpdatePreviewMessage}
-            onUpdateLastMessage={handleUpdateLastMessage}
-          />
-        } />
-      </Routes>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/" element={
+            <ChatWorkspace
+              currentDocument={currentDocument}
+              chatSessions={chatSessions}
+              onNewChat={handleNewChat}
+              onSelectSession={handleSelectSession}
+              onDeleteSession={handleDeleteSession}
+              onUpdateChatName={handleUpdateChatName}
+              onUpdateSessionId={handleUpdateSessionId}
+              onUpdatePreviewMessage={handleUpdatePreviewMessage}
+              onUpdateLastMessage={handleUpdateLastMessage}
+            />
+          } />
+          <Route path="/chat" element={
+            <ChatWorkspace
+              currentDocument={currentDocument}
+              chatSessions={chatSessions}
+              onNewChat={handleNewChat}
+              onSelectSession={handleSelectSession}
+              onDeleteSession={handleDeleteSession}
+              onUpdateChatName={handleUpdateChatName}
+              onUpdateSessionId={handleUpdateSessionId}
+              onUpdatePreviewMessage={handleUpdatePreviewMessage}
+              onUpdateLastMessage={handleUpdateLastMessage}
+            />
+          } />
+        </Routes>
+      </Suspense>
     </div>
   )
 }

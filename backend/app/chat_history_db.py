@@ -180,26 +180,44 @@ class ChatHistoryManager:
         """Get all sessions for a user across all documents"""
         db = get_db_session()
         try:
-            db_sessions = db.query(ChatSessionDB).filter(
+            # Get sessions for this specific user
+            user_sessions_query = db.query(ChatSessionDB).filter(
                 ChatSessionDB.user_id == user_id
-            ).order_by(ChatSessionDB.updated_at.desc()).all()
+            )
+            
+            # LEGACY SUPPORT: Also include old "anonymous" sessions for backward compatibility
+            # This allows users to see their old sessions that were created before user isolation
+            anonymous_sessions_query = db.query(ChatSessionDB).filter(
+                ChatSessionDB.user_id == "anonymous"
+            )
+            
+            # Combine both queries
+            all_sessions = user_sessions_query.union(anonymous_sessions_query).order_by(
+                ChatSessionDB.updated_at.desc()
+            ).all()
             
             sessions_data = []
-            for db_session in db_sessions:
+            for db_session in all_sessions:
                 # Get message count
                 message_count = len(db_session.messages)
                 last_message = db_session.messages[-1].text[:100] if db_session.messages else None
                 
+                # Add a flag to indicate if this is a legacy session
+                is_legacy = db_session.user_id == "anonymous"
+                
                 sessions_data.append({
                     "session_id": db_session.session_id,
                     "document_id": db_session.document_id,
-                    "document_name": f"Document {db_session.document_id}",
+                    "document_name": f"Document {db_session.document_id}" + (" (Legacy)" if is_legacy else ""),
                     "created_at": db_session.created_at.isoformat(),
                     "updated_at": db_session.updated_at.isoformat(),
                     "message_count": message_count,
-                    "last_message": last_message
+                    "last_message": last_message,
+                    "is_legacy": is_legacy,
+                    "user_id": db_session.user_id
                 })
             
+            logger.info(f"Retrieved {len(sessions_data)} sessions for user {user_id} (including legacy sessions)")
             return sessions_data
         except Exception as e:
             logger.error(f"Error getting all user sessions: {e}")
@@ -211,24 +229,42 @@ class ChatHistoryManager:
         """Get all chat sessions for a document and user"""
         db = get_db_session()
         try:
-            db_sessions = db.query(ChatSessionDB).filter(
+            # Get sessions for this specific user and document
+            user_sessions_query = db.query(ChatSessionDB).filter(
                 ChatSessionDB.document_id == document_id,
                 ChatSessionDB.user_id == user_id
-            ).order_by(ChatSessionDB.updated_at.desc()).all()
+            )
+            
+            # LEGACY SUPPORT: Also include old "anonymous" sessions for this document
+            anonymous_sessions_query = db.query(ChatSessionDB).filter(
+                ChatSessionDB.document_id == document_id,
+                ChatSessionDB.user_id == "anonymous"
+            )
+            
+            # Combine both queries
+            all_sessions = user_sessions_query.union(anonymous_sessions_query).order_by(
+                ChatSessionDB.updated_at.desc()
+            ).all()
             
             sessions = []
-            for db_session in db_sessions:
+            for db_session in all_sessions:
                 message_count = len(db_session.messages)
                 last_message_preview = db_session.messages[-1].text[:100] + "..." if db_session.messages else ""
+                
+                # Add legacy flag
+                is_legacy = db_session.user_id == "anonymous"
                 
                 sessions.append({
                     'session_id': db_session.session_id,
                     'created_at': db_session.created_at.isoformat(),
                     'updated_at': db_session.updated_at.isoformat(),
                     'message_count': message_count,
-                    'last_message_preview': last_message_preview
+                    'last_message_preview': last_message_preview,
+                    'is_legacy': is_legacy,
+                    'user_id': db_session.user_id
                 })
             
+            logger.info(f"Retrieved {len(sessions)} sessions for document {document_id}, user {user_id} (including legacy)")
             return sessions
         except Exception as e:
             logger.error(f"Error loading document sessions for {document_id}, {user_id}: {e}")

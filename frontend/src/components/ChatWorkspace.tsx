@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar.tsx'
 import PdfViewer from './PdfViewer.tsx'
 import ChatPanel from './ChatPanel.tsx'
-import UserProfile from './UserProfile.tsx'
 import { DocumentInfo, ChatSession } from '../App'
 import './ChatWorkspace.css'
 
 interface ChatWorkspaceProps {
-  currentDocument: DocumentInfo
+  currentDocument: DocumentInfo | null
   chatSessions: ChatSession[]
   onNewChat: () => void
   onSelectSession: (session: ChatSession) => void
@@ -242,11 +241,6 @@ const ChatWorkspace = ({
             </svg>
           </motion.button>
 
-          {/* User Profile (top right) */}
-          <div className="user-profile-floating">
-            <UserProfile />
-          </div>
-
           {/* Sidebar */}
           <AnimatePresence>
             {!sidebarCollapsed && (
@@ -381,7 +375,7 @@ const ChatWorkspace = ({
 
   return (
     <div className="chat-workspace">
-      {/* Header with User Profile */}
+      {/* Header */}
       <div className="workspace-header">
         <motion.button
           className="sidebar-toggle"
@@ -396,7 +390,6 @@ const ChatWorkspace = ({
 
         <h1 className="workspace-title">PDFPixie</h1>
 
-        <UserProfile />
       </div>
 
       {/* Main Content Area */}
@@ -471,8 +464,6 @@ const ChatWorkspace = ({
               </div>
             </>
           )}
-
-
         </div>
 
         {/* Floating New Chat Button */}

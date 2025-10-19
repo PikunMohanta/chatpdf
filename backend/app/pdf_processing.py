@@ -1,5 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form, Request
 from fastapi.responses import JSONResponse, FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List, Optional
 import os
 import tempfile
@@ -39,10 +40,19 @@ except ImportError:
     logger = logging.getLogger(__name__)
     logger.warning("chromadb not available - using mock storage for local development")
 
-from .auth import verify_token, UserInfo
+from .auth import verify_token, UserInfo, get_current_user
 
 router = APIRouter()
+security = HTTPBearer()
 logger = logging.getLogger(__name__)
+
+# Dependency function for user authentication with request context
+async def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> UserInfo:
+    """Get current user with session isolation based on request context"""
+    return await verify_token(credentials, request)
 
 # Pydantic models
 class UploadResponse(BaseModel):
@@ -254,7 +264,7 @@ def create_embeddings(text: str, document_id: str) -> str:
 @router.post("/upload", response_model=UploadResponse)
 async def upload_pdf(
     file: UploadFile = File(...),
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Upload and process PDF file
@@ -310,26 +320,43 @@ async def upload_pdf(
         raise HTTPException(status_code=500, detail="Failed to process PDF file")
 
 @router.get("/documents", response_model=List[DocumentInfo])
-async def list_documents(current_user: UserInfo = Depends(verify_token)):
+async def list_documents(current_user: UserInfo = Depends(get_current_user)):
     """
     List all documents for the current user
     """
-    # TODO: Implement database query to get user's documents
-    # For now, return mock data
-    return [
-        DocumentInfo(
-            document_id="sample-doc-1",
-            filename="sample.pdf",
-            upload_date=datetime.now(),
-            page_count=10,
-            status="processed"
-        )
-    ]
+    # Return actual available documents from local storage
+    try:
+        documents = []
+        local_storage_dir = Path("./data/uploads")
+        
+        if local_storage_dir.exists():
+            # List all PDF files in the uploads directory
+            for pdf_file in local_storage_dir.glob("*.pdf"):
+                # Extract document_id from filename (documents_dev-user_UUID.pdf)
+                filename = pdf_file.name
+                if filename.startswith("documents_dev-user_") and filename.endswith(".pdf"):
+                    # Extract UUID from filename
+                    document_id = filename.replace("documents_dev-user_", "").replace(".pdf", "")
+                    
+                    documents.append(DocumentInfo(
+                        document_id=document_id,
+                        filename=f"document_{document_id[:8]}.pdf",  # Shortened display name
+                        upload_date=datetime.fromtimestamp(pdf_file.stat().st_mtime),
+                        page_count=1,  # Default, could extract real page count
+                        status="processed"
+                    ))
+        
+        logger.info(f"Found {len(documents)} documents for user {current_user.user_id}")
+        return documents[:10]  # Return first 10 documents
+        
+    except Exception as e:
+        logger.error(f"Error listing documents: {e}")
+        return []
 
 @router.delete("/documents/{document_id}")
 async def delete_document(
     document_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Delete a document and its associated data
@@ -349,7 +376,7 @@ async def delete_document(
 @router.get("/documents/{document_id}/text")
 async def get_document_text(
     document_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Get extracted text from a document
@@ -360,7 +387,7 @@ async def get_document_text(
 @router.get("/documents/{document_id}/download")
 async def download_document(
     document_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Generate presigned URL for document download or local file path
@@ -398,7 +425,7 @@ async def download_document(
 @router.get("/pdf/{document_id}")
 async def get_pdf_document(
     document_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Get PDF document - serves the file directly for preview
@@ -413,8 +440,15 @@ async def get_pdf_document(
             local_file_name = s3_key.replace("/", "_")
             local_file_path = local_storage_dir / local_file_name
             
+            # Debug logging
+            logger.info(f"Looking for PDF file: {local_file_path}")
+            logger.info(f"File exists: {local_file_path.exists()}")
+            
             if not local_file_path.exists():
-                raise HTTPException(status_code=404, detail="Document not found")
+                # List available files for debugging
+                available_files = list(local_storage_dir.glob("*.pdf"))
+                logger.warning(f"Document not found. Available files: {[f.name for f in available_files[:5]]}")
+                raise HTTPException(status_code=404, detail=f"Document {document_id} not found")
             
             return FileResponse(
                 path=str(local_file_path),
@@ -441,7 +475,7 @@ async def get_pdf_document(
 @router.get("/document/{document_id}/preview")
 async def preview_document(
     document_id: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Serve PDF file for preview in browser (alias for /pdf/{document_id})
@@ -451,7 +485,7 @@ async def preview_document(
 @router.get("/files/{filename}")
 async def serve_local_file(
     filename: str,
-    current_user: UserInfo = Depends(verify_token)
+    current_user: UserInfo = Depends(get_current_user)
 ):
     """
     Serve locally stored PDF files for development
@@ -474,3 +508,69 @@ async def serve_local_file(
     except Exception as e:
         logger.error(f"Error serving file {filename}: {e}")
         raise HTTPException(status_code=500, detail="Failed to serve file")
+
+@router.get("/debug/files")
+async def debug_list_files(current_user: UserInfo = Depends(get_current_user)):
+    """
+    Debug endpoint to list all available files and their expected URLs
+    """
+    try:
+        local_storage_dir = Path("./data/uploads")
+        files_info = []
+        
+        if local_storage_dir.exists():
+            for pdf_file in local_storage_dir.glob("*.pdf"):
+                filename = pdf_file.name
+                if filename.startswith("documents_dev-user_") and filename.endswith(".pdf"):
+                    document_id = filename.replace("documents_dev-user_", "").replace(".pdf", "")
+                    files_info.append({
+                        "filename": filename,
+                        "document_id": document_id,
+                        "expected_s3_key": f"documents/{current_user.user_id}/{document_id}.pdf",
+                        "local_file_path": str(pdf_file),
+                        "pdf_url": f"/api/pdf/{document_id}",
+                        "direct_file_url": f"/api/files/{filename}",
+                        "size_bytes": pdf_file.stat().st_size,
+                        "modified": datetime.fromtimestamp(pdf_file.stat().st_mtime).isoformat()
+                    })
+        
+        return {
+            "user_id": current_user.user_id,
+            "files_found": len(files_info),
+            "files": files_info[:5]  # Show first 5 files
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in debug endpoint: {e}")
+        raise HTTPException(status_code=500, detail="Debug endpoint failed")
+
+@router.get("/debug/test-document")
+async def get_test_document(current_user: UserInfo = Depends(get_current_user)):
+    """
+    Get a test document for debugging - returns the first available PDF
+    """
+    try:
+        local_storage_dir = Path("./data/uploads")
+        
+        if local_storage_dir.exists():
+            for pdf_file in local_storage_dir.glob("*.pdf"):
+                filename = pdf_file.name
+                if filename.startswith("documents_dev-user_") and filename.endswith(".pdf"):
+                    document_id = filename.replace("documents_dev-user_", "").replace(".pdf", "")
+                    
+                    return {
+                        "document_id": document_id,
+                        "filename": f"{document_id[:8]}.pdf",
+                        "status": "processed",
+                        "page_count": 1,
+                        "test_pdf_url": f"/api/pdf/{document_id}",
+                        "debug_info": f"Using local file: {filename}"
+                    }
+        
+        raise HTTPException(status_code=404, detail="No test documents available")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting test document: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get test document")

@@ -1,0 +1,45 @@
+# PDFPixie Docker Ignore
+# Minimal and safe exclusions
+
+# Dependencies (installed during build)
+**/node_modules
+**/.venv
+**/venv
+**/__pycache__
+**/.uv-cache
+
+# Build outputs
+**/dist
+**/build
+
+# Data directories
+data
+uploads
+logs
+
+# Lock files
+**/package-lock.json
+**/yarn.lock
+**/uv.lock
+
+# Git and IDE
+.git
+.gitignore
+.vscode
+.idea
+
+# Environment files
+.env*
+
+# Docker and docs
+docker-compose*.yml
+docker
+docs
+
+# Testing
+coverage
+.pytest_cache
+
+# Temporary
+tmp
+temp

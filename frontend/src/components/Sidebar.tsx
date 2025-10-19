@@ -139,7 +139,6 @@ const Sidebar = ({
                 {sessions.map((session) => {
               const isEditing = editingSessionId === session.session_id
               const displayName = session.chat_name || session.preview_message || `Chat about ${session.document_name}`
-              const lastMessagePreview = session.last_message_preview
               
               return (
                 <motion.div

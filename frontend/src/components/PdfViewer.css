@@ -3,7 +3,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--bg-secondary);
+  background: var(--pdf-viewer-bg);
   position: relative;
 }
 
@@ -11,21 +11,21 @@
 .pdf-viewer.error {
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: var(--pdf-viewer-text);
 }
 
 .loading-spinner {
-  color: var(--primary-color);
-  margin-bottom: var(--spacing-md);
+  color: var(--color-primary-500);
+  margin-bottom: var(--spacing-3);
 }
 
 .pdf-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-lg);
-  background: #1E293B;
-  border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--pdf-viewer-bg);
+  border-bottom: 1px solid var(--pdf-viewer-border);
   flex-shrink: 0;
 }
 
@@ -250,4 +250,74 @@
   .pdf-document-container {
     padding: var(--spacing-sm);
   }
+}
+
+/* PDF Page Loading and Error States */
+.pdf-page-loading,
+.pdf-page-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-2);
+  padding: var(--spacing-4);
+}
+
+.loading-spinner-small {
+  color: var(--color-primary-500);
+  margin-bottom: var(--spacing-2);
+}
+
+.loading-spinner-small svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pdf-page-error p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+/* Error Content Styling */
+.error-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+  max-width: 400px;
+  text-align: center;
+}
+
+.error-icon {
+  color: var(--color-red-500);
+  opacity: 0.7;
+}
+
+.retry-button {
+  padding: var(--spacing-2) var(--spacing-4);
+  background: var(--color-primary-500);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  transition: var(--transition-base);
+}
+
+.retry-button:hover {
+  background: var(--color-primary-600);
+  transform: translateY(-1px);
 }
