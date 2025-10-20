@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import io, { Socket } from 'socket.io-client'
+import { getDeviceId } from '../utils/deviceId'
 import './ChatPanel.css'
 
 interface Message {
@@ -279,12 +280,20 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
       isFirstMessage: messages.length === 0
     })
 
+    // Get device ID for proper chat history isolation
+    const deviceId = getDeviceId();
+    
+    console.log('🆔 Device ID being sent:', deviceId);
+
     socket.emit('query', {
       document_id: documentId,
       query: queryText,
       session_id: currentSessionId,
-      user_id: 'anonymous', // TODO: Replace with actual user ID from auth
+      user_id: 'anonymous', // Legacy support
+      device_id: deviceId, // NEW: Device-specific isolation
     })
+    
+    console.log('✅ Query sent with device_id:', deviceId);
   }
 
   const displayChatName = chatName || `Chat about ${documentName}`

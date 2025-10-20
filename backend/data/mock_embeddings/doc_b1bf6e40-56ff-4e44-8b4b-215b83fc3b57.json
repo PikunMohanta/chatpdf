@@ -1,0 +1,10 @@
+{
+  "document_id": "b1bf6e40-56ff-4e44-8b4b-215b83fc3b57",
+  "chunks": [
+    "GitHub Copilot Login Documentation \n1. Accepting the Copilot Invitation \n• \nYou will receive an invitation to join Godigit-General-Copilot. \n \n• \nClick the invitation link to join. \n• \nIf you already have a Copilot account, sign in. Otherwise, create a new account. \n \n• \nWhen creating your account, use the username format: EmpId-Name. \n• \nAfter creating your account, confirm your email address and sign in. \n•",
+    "• \nGo back to the invitation email and click the link again to join Godigit-General-Copilot. \n \n• \nAccept the invitation to complete the process.",
+    "2. Using Copilot in VS Code \n• \nOpen VS Code and click Sign in to use Copilot. \n \n• \nClick Continue with GitHub. \n \n• \nSign in with your Copilot account. \n \n• \nClick Open when prompted. \n \n \n\n\n3. Using Copilot in IntelliJ \n• \nGo to Settings → Plugins. \n• \nInstall the Copilot extension. \n \n• \nSign in to Copilot. \n \n• \nClick Copy & Open when prompted. \n \n• \nEnter the copied code and continue.",
+    "• \nClick Authorize. \n \n \nAfter completing these steps, you can use Copilot. \nIf you have any questions, please watch this video: \nhttps://youtu.be/n0NlxUyA7FI?si=MfWV99XgKI0a6-OJ"
+  ],
+  "created_at": "2025-10-20 14:18:51.476670"
+}

@@ -6,26 +6,10 @@ import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import './PdfViewer.css'
 
-// Configure PDF.js worker with fallback options
-const configurePdfWorker = () => {
-  try {
-    // First try to use the local worker file
-    pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
-    console.log('✅ PDF worker configured with local file')
-  } catch (error) {
-    console.warn('Failed to set local PDF worker, falling back to CDN:', error)
-    try {
-      // Fallback to CDN version if local fails
-      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
-      console.log('✅ PDF worker configured with CDN fallback')
-    } catch (fallbackError) {
-      console.error('❌ Failed to configure PDF worker:', fallbackError)
-    }
-  }
-}
-
-// Initialize worker
-configurePdfWorker()
+// Configure PDF.js worker
+// Using unpkg CDN which is more reliable for pdfjs-dist
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`
+console.log(`✅ PDF.js worker configured: v${pdfjs.version}`)
 
 interface PdfViewerProps {
   documentId: string
