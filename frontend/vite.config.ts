@@ -43,6 +43,11 @@ export default defineConfig(({ command, mode }) => {
             const info = assetInfo.name?.split('.') || []
             let extType = info[info.length - 1]
             
+            // Keep PDF worker files in root
+            if (assetInfo.name === 'pdf.worker.min.js') {
+              return '[name][extname]'
+            }
+            
             if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
               extType = 'img'
             } else if (/woff|woff2|eot|ttf|otf/i.test(extType)) {

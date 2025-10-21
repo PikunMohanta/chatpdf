@@ -8,9 +8,16 @@ import 'react-pdf/dist/Page/TextLayer.css'
 import './PdfViewer.css'
 
 // Configure PDF.js worker
-// Using unpkg CDN which is more reliable for pdfjs-dist
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`
-console.log(`✅ PDF.js worker configured: v${pdfjs.version}`)
+// Use local worker file instead of external CDN for better reliability in production
+if (import.meta.env.PROD) {
+  // In production, use the local worker file
+  pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+  console.log(`✅ PDF.js worker configured: using local worker file`)
+} else {
+  // In development, use CDN for convenience
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`
+  console.log(`✅ PDF.js worker configured: v${pdfjs.version} from CDN`)
+}
 
 interface PdfViewerProps {
   documentId: string
