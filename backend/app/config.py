@@ -15,33 +15,44 @@ IS_DEVELOPMENT = not IS_PRODUCTION
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
+# Database configuration
+# Railway provides DATABASE_URL automatically for PostgreSQL
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL:
+    # PostgreSQL on Railway
+    # Railway provides postgres:// but SQLAlchemy needs postgresql://
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    print(f"✅ Using PostgreSQL database")
+else:
+    # SQLite for development
+    DATABASE_URL = f"sqlite:///./data/database/chat_history.db"
+    print(f"✅ Using SQLite database (development)")
+
 # Paths configuration
 if IS_PRODUCTION:
-    # Production paths - try to use persistent storage, fallback to /tmp
-    # Check if we have a persistent disk mounted
-    if os.path.exists("/opt/render/project/data"):
-        DATA_DIR = Path("/opt/render/project/data")
+    # Production paths - Railway provides persistent volumes
+    # Check if Railway volume is mounted
+    if os.path.exists("/data"):
+        DATA_DIR = Path("/data")
+        print("✅ Using Railway persistent volume at /data")
     else:
         # Fallback to /tmp but warn about data loss
         DATA_DIR = Path("/tmp/pdfpixie")
         print("⚠️  WARNING: Using ephemeral storage - data will be lost on restart!")
     
     UPLOADS_DIR = DATA_DIR / "uploads"
-    DATABASE_DIR = DATA_DIR / "database"
     CHROMADB_DIR = DATA_DIR / "chromadb"
 else:
     # Development paths
     DATA_DIR = Path("./data")
     UPLOADS_DIR = DATA_DIR / "uploads"
-    DATABASE_DIR = DATA_DIR / "database"
     CHROMADB_DIR = DATA_DIR / "chromadb"
 
 # Ensure directories exist
-for directory in [DATA_DIR, UPLOADS_DIR, DATABASE_DIR, CHROMADB_DIR]:
+for directory in [DATA_DIR, UPLOADS_DIR, CHROMADB_DIR]:
     directory.mkdir(parents=True, exist_ok=True)
-
-# Database configuration
-DATABASE_URL = f"sqlite:///{DATABASE_DIR}/chat_history.db"
 
 # CORS configuration
 if IS_PRODUCTION:

@@ -26,23 +26,34 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for production/development
-# For unified deployment, we don't need CORS since everything is same origin
-if not IS_PRODUCTION:
+# Configure CORS for Vercel + Railway deployment
+if IS_PRODUCTION:
+    # Production CORS - allow Vercel frontend
+    allowed_origins = [
+        "https://chatpdf-frontend.vercel.app",  # Replace with your Vercel URL
+        "https://*.vercel.app",  # Allow all Vercel preview deployments
+        "http://localhost:3000",  # Local testing
+        "http://localhost:5173",  # Vite dev server
+    ]
+else:
     # Development CORS - allow all for local development
     allowed_origins = ["*"]
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize Socket.IO with environment-specific CORS
-# For unified deployment, CORS is not needed since everything is same origin
 if IS_PRODUCTION:
-    cors_origins = True  # Same origin
+    # Production CORS for Socket.IO - allow Vercel frontend
+    cors_origins = [
+        "https://chatpdf-frontend.vercel.app",  # Replace with your Vercel URL
+        "https://*.vercel.app",
+    ]
 else:
     cors_origins = "*"  # Allow all for development
 
@@ -84,61 +95,16 @@ app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
 async def health_check():
     return {"status": "healthy", "service": "pdfpixie-api"}
 
-# Static file serving for unified deployment
-static_dir = Path(__file__).parent / "static"
-if static_dir.exists() and IS_PRODUCTION:
-    logger.info(f"📁 Serving static files from: {static_dir}")
-    
-    # Serve static assets (CSS, JS, images)
-    app.mount("/assets", StaticFiles(directory=static_dir / "assets"), name="assets")
-    
-    # Serve any other static files (like pdf.worker.min.js)
-    @app.get("/pdf.worker.min.js")
-    async def serve_pdf_worker():
-        worker_file = static_dir / "pdf.worker.min.js"
-        if worker_file.exists():
-            return FileResponse(worker_file)
-        raise HTTPException(status_code=404, detail="PDF worker not found")
-    
-    # Serve favicon and other root files
-    @app.get("/favicon.ico")
-    async def serve_favicon():
-        favicon_file = static_dir / "favicon.ico"
-        if favicon_file.exists():
-            return FileResponse(favicon_file)
-        raise HTTPException(status_code=404)
-    
-    # Handle SPA routing - serve index.html for non-API routes
-    @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
-        # Don't intercept API routes, docs, or health check
-        if full_path.startswith(("api/", "socket.io/", "health", "docs", "redoc", "openapi.json")):
-            raise HTTPException(status_code=404, detail="Not found")
-        
-        # Serve index.html for all other routes (SPA routing)
-        index_file = static_dir / "index.html"
-        if index_file.exists():
-            return FileResponse(index_file)
-        else:
-            raise HTTPException(status_code=404, detail="Frontend not built")
-else:
-    # Development or API-only mode
-    @app.get("/")
-    async def root():
-        if not IS_PRODUCTION:
-            return {
-                "message": "Welcome to PDFPixie API (Development Mode)",
-                "version": "1.0.0",
-                "docs": "/docs",
-                "note": "Frontend served separately in development"
-            }
-        else:
-            return {
-                "message": "Welcome to PDFPixie API",
-                "version": "1.0.0",
-                "docs": "/docs",
-                "error": "Frontend static files not found"
-            }
+# Root endpoint - API only (frontend served by Vercel)
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to PDFPixie API",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "frontend": "Served by Vercel",
+        "environment": ENVIRONMENT
+    }
 
 # Development endpoint for loading chat history without authentication
 @app.get("/api/chat/history/{session_id}")
