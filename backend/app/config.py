@@ -17,8 +17,15 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Paths configuration
 if IS_PRODUCTION:
-    # Production paths - use /tmp for writable storage on Render
-    DATA_DIR = Path("/tmp/pdfpixie")
+    # Production paths - try to use persistent storage, fallback to /tmp
+    # Check if we have a persistent disk mounted
+    if os.path.exists("/opt/render/project/data"):
+        DATA_DIR = Path("/opt/render/project/data")
+    else:
+        # Fallback to /tmp but warn about data loss
+        DATA_DIR = Path("/tmp/pdfpixie")
+        print("⚠️  WARNING: Using ephemeral storage - data will be lost on restart!")
+    
     UPLOADS_DIR = DATA_DIR / "uploads"
     DATABASE_DIR = DATA_DIR / "database"
     CHROMADB_DIR = DATA_DIR / "chromadb"

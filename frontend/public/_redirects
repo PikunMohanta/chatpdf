@@ -1,0 +1,6 @@
+# Handle client-side routing
+/*    /index.html   200
+
+# API calls should go to backend (fallback)
+/api/*  https://chatpdf-y15f.onrender.com/api/:splat  200
+/socket.io/*  https://chatpdf-y15f.onrender.com/socket.io/:splat  200
