@@ -6,14 +6,7 @@ from sqlalchemy import create_engine, Column, String, DateTime, Text, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
-import os
-
-# Create database directory if it doesn't exist
-DB_DIR = "./data/database"
-os.makedirs(DB_DIR, exist_ok=True)
-
-# SQLite database URL
-DATABASE_URL = f"sqlite:///{DB_DIR}/chat_history.db"
+from .config import DATABASE_URL, IS_PRODUCTION
 
 # Create engine
 engine = create_engine(

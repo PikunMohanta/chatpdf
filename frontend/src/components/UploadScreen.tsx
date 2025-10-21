@@ -3,6 +3,7 @@ import { useDropzone } from 'react-dropzone'
 import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import { DocumentInfo } from '../App'
+import config from '../config'
 import './UploadScreen.css'
 
 interface UploadScreenProps {
@@ -29,7 +30,7 @@ const UploadScreen = ({ onUploadSuccess }: UploadScreenProps) => {
 
     try {
       const response = await axios.post<DocumentInfo>(
-        'http://localhost:8000/api/upload',
+        `${config.apiUrl}/upload`,
         formData,
         {
           headers: {

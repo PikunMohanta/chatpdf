@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { motion } from 'framer-motion'
 import axios from 'axios'
+import config from '../config'
 import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import './PdfViewer.css'
@@ -40,10 +41,10 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
         setError(null)
 
         console.log(`🔍 Attempting to load PDF with document ID: ${documentId}`)
-        console.log(`📍 Request URL: http://localhost:8000/api/pdf/${documentId}`)
+        console.log(`📍 Request URL: ${config.apiUrl}/pdf/${documentId}`)
 
         const response = await axios.get(
-          `http://localhost:8000/api/pdf/${documentId}`,
+          `${config.apiUrl}/pdf/${documentId}`,
           {
             headers: {
               Authorization: 'Bearer dev-token',

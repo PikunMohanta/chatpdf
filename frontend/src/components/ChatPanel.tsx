@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import io, { Socket } from 'socket.io-client'
 import { getDeviceId } from '../utils/deviceId'
+import config from '../config'
 import './ChatPanel.css'
 
 interface Message {
@@ -88,7 +89,7 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
 
       try {
         console.log('📥 Attempting to load chat history for session:', sessionId)
-        const response = await fetch(`http://localhost:8000/api/chat/history/${sessionId}`)
+        const response = await fetch(`${config.apiUrl}/chat/history/${sessionId}`)
         
         console.log('📡 History API response status:', response.status)
         
@@ -130,9 +131,9 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
   }, [sessionId, documentId])
 
   useEffect(() => {
-    console.log('🔌 Initializing Socket.IO connection to http://localhost:8000')
+    console.log(`🔌 Initializing Socket.IO connection to ${config.socketUrl}`)
     
-    const newSocket = io('http://localhost:8000', {
+    const newSocket = io(config.socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,

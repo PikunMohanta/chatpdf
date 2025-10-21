@@ -1,11 +1,14 @@
 # PDFPixie Requirements - Python 3.10+
-# For faster installs, use: uv pip install -r requirements.txt
+# Render deployment requirements
 
 # Core FastAPI and server
 fastapi[all]==0.115.0
 uvicorn[standard]==0.30.6
 python-multipart==0.0.12
 python-dotenv==1.0.1
+
+# Database
+sqlalchemy==2.0.23
 
 # Authentication (dev mode)
 python-jose[cryptography]==3.3.0
@@ -33,3 +36,6 @@ pydantic==2.9.2
 
 # AWS (optional - for S3 storage in production)
 boto3==1.35.36
+
+# Production server
+gunicorn==21.2.0

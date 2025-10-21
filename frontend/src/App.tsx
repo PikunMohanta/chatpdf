@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import './App.css'
+import config from './config'
 
 // Lazy load heavy components
 const ChatWorkspace = lazy(() => import('./components/ChatWorkspace'))
@@ -42,7 +43,7 @@ function App() {
     const loadChatSessions = async () => {
       try {
         console.log('🔄 Loading chat sessions from backend...')
-        const response = await fetch('http://localhost:8000/api/chat/sessions/all', {
+        const response = await fetch(`${config.apiUrl}/chat/sessions/all`, {
           headers: {
             'Authorization': 'Bearer dev-token'
           }
@@ -101,7 +102,7 @@ function App() {
             // Load test document immediately
             const loadTestDocument = async () => {
               try {
-                const response = await fetch('http://localhost:8000/api/debug/test-document', {
+                const response = await fetch(`${config.apiUrl}/debug/test-document`, {
                   headers: {
                     'Authorization': 'Bearer dev-token'
                   }

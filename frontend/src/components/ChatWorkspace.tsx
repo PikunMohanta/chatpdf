@@ -5,6 +5,7 @@ import Sidebar from './Sidebar.tsx'
 import PdfViewer from './PdfViewer.tsx'
 import ChatPanel from './ChatPanel.tsx'
 import { DocumentInfo, ChatSession } from '../App'
+import config from '../config'
 import './ChatWorkspace.css'
 
 interface ChatWorkspaceProps {
@@ -179,7 +180,7 @@ const ChatWorkspace = ({
     formData.append('file', file)
 
     try {
-      const response = await fetch('http://localhost:8000/api/upload', {
+      const response = await fetch(`${config.apiUrl}/upload`, {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer dev-token'

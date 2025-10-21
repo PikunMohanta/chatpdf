@@ -7,9 +7,14 @@ from dotenv import load_dotenv
 import logging
 import uuid
 from datetime import datetime
+import os
 
 # Load environment variables
 load_dotenv()
+
+# Get environment
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+IS_PRODUCTION = ENVIRONMENT == "production"
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -18,22 +23,42 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS BEFORE Socket.IO initialization
+# Configure CORS for production/development
+if IS_PRODUCTION:
+    # Production CORS - restrict to specific origins
+    allowed_origins = [
+        "https://pdfpixie-frontend.onrender.com",
+        "https://pdfpixie.onrender.com",
+        "http://localhost:3000",  # For local testing
+        "http://localhost:5173",  # Vite dev server
+    ]
+else:
+    # Development CORS - allow all
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for Docker/production
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Initialize Socket.IO with permissive CORS for development
+# Initialize Socket.IO with environment-specific CORS
+if IS_PRODUCTION:
+    cors_origins = [
+        "https://pdfpixie-frontend.onrender.com",
+        "https://pdfpixie.onrender.com",
+    ]
+else:
+    cors_origins = "*"
+
 sio = socketio.AsyncServer(
     async_mode='asgi',
-    cors_allowed_origins='*',  # Allow all origins for development
-    logger=True,
-    engineio_logger=True,
-    always_connect=True  # Allow connections without authentication for development
+    cors_allowed_origins=cors_origins,
+    logger=IS_PRODUCTION,  # Reduce logging in production
+    engineio_logger=False,  # Disable engine.io logging in production
+    always_connect=True
 )
 
 # Combine FastAPI and Socket.IO
@@ -221,10 +246,13 @@ async def query(sid, data):
         await sio.emit('error', {'message': f'Error processing query: {str(e)}'}, room=sid)
 
 if __name__ == "__main__":
+    # Get port from environment variable (for Render deployment)
+    port = int(os.getenv("PORT", 8000))
+    
     uvicorn.run(
         "main:socket_app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
+        port=port,
+        reload=not IS_PRODUCTION,  # Disable reload in production
+        log_level="info" if IS_PRODUCTION else "debug"
     )
