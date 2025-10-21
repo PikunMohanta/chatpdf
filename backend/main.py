@@ -146,15 +146,9 @@ async def query(sid, data):
         document_id = data.get('document_id')
         query_text = data.get('query')
         session_id = data.get('session_id')
-        user_id = data.get('user_id', 'anonymous')  # Legacy support
-        device_id = data.get('device_id')  # NEW: Get device_id for proper isolation
+        user_id = data.get('user_id', 'anonymous')  # Get user_id from client
         
-        # Validate device_id presence
-        if not device_id:
-            logger.warning(f"⚠️  No device_id provided from {sid} - using fallback")
-            device_id = f"fallback_{sid}"
-        
-        logger.info(f"📥 Received query from {sid}: {query_text[:50] if query_text else 'None'}... for document {document_id}, session {session_id}, device {device_id}")
+        logger.info(f"📥 Received query from {sid}: {query_text[:50] if query_text else 'None'}... for document {document_id}, session {session_id}, user {user_id}")
         
         if not query_text or not document_id:
             logger.warning(f"Missing data - query: {bool(query_text)}, document_id: {bool(document_id)}")
@@ -178,9 +172,9 @@ async def query(sid, data):
             session = chat_history_manager.get_session(session_id)
         
         if not session:
-            # Create new session for this document and device
-            logger.info(f"Creating new chat session for document {document_id}, device {device_id or 'unknown'}")
-            session = chat_history_manager.create_session(document_id, user_id=user_id, device_id=device_id)
+            # Create new session for this document and user
+            logger.info(f"Creating new chat session for document {document_id}, user {user_id}")
+            session = chat_history_manager.create_session(document_id, user_id)
             session_id = session.session_id
         
         # Save user message to history

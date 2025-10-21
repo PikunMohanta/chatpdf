@@ -35,8 +35,7 @@ class ChatSessionDB(Base):
     
     session_id = Column(String(36), primary_key=True, index=True)
     document_id = Column(String(36), nullable=False, index=True)
-    user_id = Column(String(100), nullable=False, index=True)  # Keep for backward compatibility
-    device_id = Column(String(100), nullable=True, index=True)  # NEW: Device-specific isolation
+    user_id = Column(String(100), nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     

@@ -54,12 +54,11 @@ class ChatMessage:
 
 class ChatSession:
     """Chat session model (same interface as before for compatibility)"""
-    def __init__(self, session_id: str, document_id: str, user_id: str = None, 
-                 device_id: str = None, created_at: datetime = None):
+    def __init__(self, session_id: str, document_id: str, user_id: str, 
+                 created_at: datetime = None):
         self.session_id = session_id
         self.document_id = document_id
-        self.user_id = user_id or "anonymous"  # Keep for backward compatibility
-        self.device_id = device_id  # NEW: Device-specific identifier
+        self.user_id = user_id
         self.created_at = created_at or datetime.now()
         self.updated_at = datetime.now()
         self.messages: List[ChatMessage] = []
@@ -73,7 +72,6 @@ class ChatSession:
             'session_id': self.session_id,
             'document_id': self.document_id,
             'user_id': self.user_id,
-            'device_id': self.device_id,  # NEW: Include device_id
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat(),
             'messages': [msg.to_dict() for msg in self.messages]
@@ -84,8 +82,7 @@ class ChatSession:
         session = cls(
             session_id=data['session_id'],
             document_id=data['document_id'],
-            user_id=data.get('user_id', 'anonymous'),  # Backward compatibility
-            device_id=data.get('device_id'),  # NEW: Support device_id
+            user_id=data['user_id'],
             created_at=datetime.fromisoformat(data['created_at'])
         )
         session.updated_at = datetime.fromisoformat(data['updated_at'])
@@ -99,7 +96,6 @@ class ChatSession:
             session_id=db_session.session_id,
             document_id=db_session.document_id,
             user_id=db_session.user_id,
-            device_id=db_session.device_id,  # NEW: Load device_id from DB
             created_at=db_session.created_at
         )
         session.updated_at = db_session.updated_at
@@ -114,14 +110,8 @@ class ChatHistoryManager:
     def __init__(self):
         logger.info("Chat history manager initialized with SQLite database")
     
-    def create_session(self, document_id: str, user_id: str = None, device_id: str = None) -> ChatSession:
-        """Create a new chat session for a document and device
-        
-        Args:
-            document_id: The document identifier
-            user_id: Legacy user identifier (optional, defaults to 'anonymous')
-            device_id: Unique device identifier for isolation (recommended)
-        """
+    def create_session(self, document_id: str, user_id: str) -> ChatSession:
+        """Create a new chat session for a document and user"""
         session_id = str(uuid.uuid4())
         
         db = get_db_session()
@@ -130,8 +120,7 @@ class ChatHistoryManager:
             db_session = ChatSessionDB(
                 session_id=session_id,
                 document_id=document_id,
-                user_id=user_id or "anonymous",
-                device_id=device_id,  # NEW: Store device_id
+                user_id=user_id,
                 created_at=datetime.now(),
                 updated_at=datetime.now()
             )
@@ -139,7 +128,7 @@ class ChatHistoryManager:
             db.commit()
             db.refresh(db_session)
             
-            logger.info(f"Created new chat session {session_id} for document {document_id}, device {device_id or 'unknown'}")
+            logger.info(f"Created new chat session {session_id} for document {document_id}, user {user_id}")
             
             # Return as ChatSession object
             return ChatSession.from_db(db_session)
@@ -192,44 +181,28 @@ class ChatHistoryManager:
         """Get all sessions for a user across all documents"""
         db = get_db_session()
         try:
-            # Get sessions for this specific user
-            user_sessions_query = db.query(ChatSessionDB).filter(
+            # Get sessions only for this specific user (no legacy support)
+            db_sessions = db.query(ChatSessionDB).filter(
                 ChatSessionDB.user_id == user_id
-            )
-            
-            # LEGACY SUPPORT: Also include old "anonymous" sessions for backward compatibility
-            # This allows users to see their old sessions that were created before user isolation
-            anonymous_sessions_query = db.query(ChatSessionDB).filter(
-                ChatSessionDB.user_id == "anonymous"
-            )
-            
-            # Combine both queries
-            all_sessions = user_sessions_query.union(anonymous_sessions_query).order_by(
-                ChatSessionDB.updated_at.desc()
-            ).all()
+            ).order_by(ChatSessionDB.updated_at.desc()).all()
             
             sessions_data = []
-            for db_session in all_sessions:
+            for db_session in db_sessions:
                 # Get message count
                 message_count = len(db_session.messages)
                 last_message = db_session.messages[-1].text[:100] if db_session.messages else None
                 
-                # Add a flag to indicate if this is a legacy session
-                is_legacy = db_session.user_id == "anonymous"
-                
                 sessions_data.append({
                     "session_id": db_session.session_id,
                     "document_id": db_session.document_id,
-                    "document_name": f"Document {db_session.document_id}" + (" (Legacy)" if is_legacy else ""),
+                    "document_name": f"Document {db_session.document_id}",
                     "created_at": db_session.created_at.isoformat(),
                     "updated_at": db_session.updated_at.isoformat(),
                     "message_count": message_count,
-                    "last_message": last_message,
-                    "is_legacy": is_legacy,
-                    "user_id": db_session.user_id
+                    "last_message": last_message
                 })
             
-            logger.info(f"Retrieved {len(sessions_data)} sessions for user {user_id} (including legacy sessions)")
+            logger.info(f"Retrieved {len(sessions_data)} sessions for user {user_id}")
             return sessions_data
         except Exception as e:
             logger.error(f"Error getting all user sessions: {e}")
@@ -237,70 +210,30 @@ class ChatHistoryManager:
         finally:
             db.close()
     
-    def get_document_sessions(self, document_id: str, user_id: str = None, device_id: str = None) -> List[Dict]:
-        """Get all chat sessions for a document filtered by device
-        
-        Args:
-            document_id: The document identifier
-            user_id: Legacy user identifier (optional, for backward compatibility)
-            device_id: Device identifier (recommended for proper isolation)
-        """
+    def get_document_sessions(self, document_id: str, user_id: str) -> List[Dict]:
+        """Get all chat sessions for a document and user"""
         db = get_db_session()
         try:
-            # Priority: Use device_id if provided, otherwise fall back to user_id
-            if device_id:
-                # Filter by device_id for proper isolation
-                sessions_query = db.query(ChatSessionDB).filter(
-                    ChatSessionDB.document_id == document_id,
-                    ChatSessionDB.device_id == device_id
-                )
-                logger.info(f"Fetching sessions for document {document_id}, device {device_id}")
-            elif user_id:
-                # LEGACY SUPPORT: Filter by user_id
-                user_sessions_query = db.query(ChatSessionDB).filter(
-                    ChatSessionDB.document_id == document_id,
-                    ChatSessionDB.user_id == user_id
-                )
-                
-                # Also include old "anonymous" sessions for backward compatibility
-                anonymous_sessions_query = db.query(ChatSessionDB).filter(
-                    ChatSessionDB.document_id == document_id,
-                    ChatSessionDB.user_id == "anonymous",
-                    ChatSessionDB.device_id.is_(None)  # Only legacy sessions without device_id
-                )
-                
-                sessions_query = user_sessions_query.union(anonymous_sessions_query)
-                logger.info(f"Fetching sessions for document {document_id}, user {user_id} (legacy mode)")
-            else:
-                logger.warning("No device_id or user_id provided, returning empty list")
-                return []
-            
-            # Execute query
-            all_sessions = sessions_query.order_by(
-                ChatSessionDB.updated_at.desc()
-            ).all()
+            # Get sessions only for this specific user and document
+            db_sessions = db.query(ChatSessionDB).filter(
+                ChatSessionDB.document_id == document_id,
+                ChatSessionDB.user_id == user_id
+            ).order_by(ChatSessionDB.updated_at.desc()).all()
             
             sessions = []
-            for db_session in all_sessions:
+            for db_session in db_sessions:
                 message_count = len(db_session.messages)
                 last_message_preview = db_session.messages[-1].text[:100] + "..." if db_session.messages else ""
-                
-                # Add legacy flag
-                is_legacy = (db_session.user_id == "anonymous" and db_session.device_id is None)
                 
                 sessions.append({
                     'session_id': db_session.session_id,
                     'created_at': db_session.created_at.isoformat(),
                     'updated_at': db_session.updated_at.isoformat(),
                     'message_count': message_count,
-                    'last_message_preview': last_message_preview,
-                    'is_legacy': is_legacy,
-                    'user_id': db_session.user_id,
-                    'device_id': db_session.device_id  # NEW: Include device_id
+                    'last_message_preview': last_message_preview
                 })
             
-            filter_desc = f"device {device_id}" if device_id else f"user {user_id} (legacy)"
-            logger.info(f"Retrieved {len(sessions)} sessions for document {document_id}, {filter_desc}")
+            logger.info(f"Retrieved {len(sessions)} sessions for document {document_id}, user {user_id}")
             return sessions
         except Exception as e:
             logger.error(f"Error loading document sessions for {document_id}: {e}")
@@ -308,30 +241,14 @@ class ChatHistoryManager:
         finally:
             db.close()
     
-    def get_latest_session_for_document(self, document_id: str, user_id: str = None, device_id: str = None) -> Optional[ChatSession]:
-        """Get the most recent chat session for a document filtered by device
-        
-        Args:
-            document_id: The document identifier
-            user_id: Legacy user identifier (optional)
-            device_id: Device identifier (recommended)
-        """
+    def get_latest_session_for_document(self, document_id: str, user_id: str) -> Optional[ChatSession]:
+        """Get the most recent chat session for a document and user"""
         db = get_db_session()
         try:
-            # Priority: Use device_id if provided
-            if device_id:
-                db_session = db.query(ChatSessionDB).filter(
-                    ChatSessionDB.document_id == document_id,
-                    ChatSessionDB.device_id == device_id
-                ).order_by(ChatSessionDB.updated_at.desc()).first()
-            elif user_id:
-                db_session = db.query(ChatSessionDB).filter(
-                    ChatSessionDB.document_id == document_id,
-                    ChatSessionDB.user_id == user_id
-                ).order_by(ChatSessionDB.updated_at.desc()).first()
-            else:
-                logger.warning("No device_id or user_id provided")
-                return None
+            db_session = db.query(ChatSessionDB).filter(
+                ChatSessionDB.document_id == document_id,
+                ChatSessionDB.user_id == user_id
+            ).order_by(ChatSessionDB.updated_at.desc()).first()
             
             if not db_session:
                 return None
