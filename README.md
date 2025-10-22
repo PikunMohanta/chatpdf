@@ -4,17 +4,16 @@ Your intelligent PDF companion. Upload PDFs, ask questions, and get AI-powered r
 
 ## 🚀 **Quick Deploy (100% Free)**
 
-Deploy to **Fly.io** (backend) + **Vercel** (frontend):
+Deploy to **Render** (backend) + **Supabase** (database) + **Vercel** (frontend):
 
-**📚 [Complete Deployment Guide →](FLY_VERCEL_DEPLOYMENT.md)**
+**📚 [Complete Deployment Guide →](RENDER_SUPABASE_DEPLOYMENT.md)**
 
 ```bash
-# Backend to Fly.io
-fly launch --dockerfile Dockerfile.fly
-fly deploy
+# 1. Create Supabase database (5 min)
+# 2. Deploy backend to Render (10 min)
+# 3. Deploy frontend to Vercel (5 min)
 
-# Frontend to Vercel  
-vercel --prod
+# Optional: Add AWS S3 for persistent file storage
 ```
 
 ## ✨ Features
@@ -36,14 +35,22 @@ vercel --prod
 - Vite (build tool)
 - CSS3 with custom design system
 
-**Backend (Fly.io):**
+**Backend (Render):**
 - FastAPI (async Python web framework)
 - Socket.IO Server (WebSocket communication)
 - LangChain (AI orchestration)
 - ChromaDB (vector embeddings)
 - PyMuPDF (PDF text extraction)
 - OpenRouter API (AI responses)
+
+**Database (Supabase):**
 - PostgreSQL (chat history & metadata)
+- 500MB free tier
+- Automatic backups
+
+**Storage (Optional - AWS S3):**
+- Persistent PDF file storage
+- Pay-per-use pricing (~$0.023/GB/month)
 
 **Development:**
 - UV Package Manager (faster than pip)
@@ -237,26 +244,34 @@ npm run preview                     # Preview production build
 
 ## � Production Deployment
 
-See the complete deployment guide: **[FLY_VERCEL_DEPLOYMENT.md](FLY_VERCEL_DEPLOYMENT.md)**
+See the complete deployment guide: **[RENDER_SUPABASE_DEPLOYMENT.md](RENDER_SUPABASE_DEPLOYMENT.md)**
 
 ### Architecture
 
 ```
-┌─────────────────┐         ┌──────────────────┐
-│  Vercel (CDN)   │ ←─────→ │   Fly.io (API)   │
-│                 │         │                  │
-│  React Frontend │  HTTPS  │  FastAPI Backend │
-│  Global Edge    │         │  PostgreSQL DB   │
-│                 │         │  Persistent Vol. │
-└─────────────────┘         └──────────────────┘
+┌─────────────────┐         ┌──────────────────┐         ┌──────────────────┐
+│  Vercel (CDN)   │ ←─────→ │  Render (API)    │ ←─────→ │ Supabase (DB)    │
+│                 │         │                  │         │                  │
+│  React Frontend │  HTTPS  │  FastAPI Backend │  SQL    │  PostgreSQL 500MB│
+│  Global Edge    │         │  Socket.IO       │         │  Auto Backups    │
+│                 │         │                  │         │                  │
+└─────────────────┘         └──────────────────┘         └──────────────────┘
+                                      ↓
+                            ┌──────────────────┐
+                            │   AWS S3 (Opt)   │
+                            │                  │
+                            │  PDF Files       │
+                            │  Pay-per-use     │
+                            └──────────────────┘
 ```
 
 **Benefits:**
-- ✅ 100% Free hosting
+- ✅ 100% Free hosting (no credit card required)
 - ✅ Global CDN (Vercel)
-- ✅ Persistent storage (Fly.io)
-- ✅ PostgreSQL included
+- ✅ Persistent database (Supabase)
+- ✅ Optional S3 for file storage
 - ✅ Auto-deploy on git push
+- ⚠️ Service sleeps after 15min (wakes in ~30 sec)
 
 ## 🤝 Contributing
 

@@ -1,0 +1,30 @@
+services:
+  # Backend API Service
+  - type: web
+    name: pdfpixie-backend
+    runtime: python
+    plan: free
+    region: singapore
+    branch: render
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && python -m uvicorn main:socket_app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10.0"
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false  # Add manually in Render dashboard
+      - key: OPENROUTER_API_KEY
+        sync: false  # Add manually in Render dashboard
+      - key: FRONTEND_URL
+        sync: false  # Add after Vercel deployment
+      - key: AWS_ACCESS_KEY_ID
+        sync: false  # Add manually if using S3
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false  # Add manually if using S3
+      - key: AWS_REGION
+        value: ap-southeast-1
+      - key: S3_BUCKET_NAME
+        sync: false  # Add manually if using S3
+    healthCheckPath: /health
