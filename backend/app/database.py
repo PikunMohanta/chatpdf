@@ -8,10 +8,15 @@ from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
 from .config import DATABASE_URL, IS_PRODUCTION
 
-# Create engine
+# Create engine with appropriate connect_args based on database type
+connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    connect_args = {"check_same_thread": False}  # Needed for SQLite
+# PostgreSQL doesn't need check_same_thread parameter
+
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False},  # Needed for SQLite
+    connect_args=connect_args,
     echo=False  # Set to True for SQL query logging
 )
 
