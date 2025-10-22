@@ -68,6 +68,8 @@ Instant Loading        Auto-deploy on push        Auto-backups          99.99999
    ```
 6. **Replace `[YOUR-PASSWORD]`** with the password you created in Step 1
 
+postgresql://postgres:IZdlpwtluJRudGan@db.civvmgyopzblyqugyfbk.supabase.co:5432/postgres
+
 **Save this URL - you'll need it for Render!**
 
 ### **Step 3: Create Database Tables (Optional)**
