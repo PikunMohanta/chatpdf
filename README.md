@@ -2,33 +2,48 @@
 
 Your intelligent PDF companion. Upload PDFs, ask questions, and get AI-powered responses based on document content using advanced semantic search and real-time chat.
 
+## 🚀 **Quick Deploy (100% Free)**
+
+Deploy to **Fly.io** (backend) + **Vercel** (frontend):
+
+**📚 [Complete Deployment Guide →](FLY_VERCEL_DEPLOYMENT.md)**
+
+```bash
+# Backend to Fly.io
+fly launch --dockerfile Dockerfile.fly
+fly deploy
+
+# Frontend to Vercel  
+vercel --prod
+```
+
 ## ✨ Features
 
 - 📄 **PDF Upload & Processing** - Drag-and-drop interface with instant text extraction
 - 🤖 **AI-Powered Chat** - Interactive conversations with your PDF documents
 - 🔍 **Semantic Search** - ChromaDB vector embeddings for accurate context retrieval
 - ⚡ **Real-time Communication** - WebSocket-based chat with typing indicators
-- � **Chat History** - Persistent conversation storage with session management
+- 💬 **Chat History** - Persistent conversation storage with PostgreSQL
 - 🎨 **Modern UI** - Beautiful interface with glassmorphism effects and Zen Serif font
 - 🚀 **Fast Development** - UV package manager for 10-100x faster installations
 
 ## 🛠️ Tech Stack
 
-**Frontend:**
+**Frontend (Vercel):**
 - React 18 + TypeScript
 - Socket.IO Client (real-time communication)
 - React-PDF (document preview)
 - Vite (build tool)
 - CSS3 with custom design system
 
-**Backend:**
+**Backend (Fly.io):**
 - FastAPI (async Python web framework)
 - Socket.IO Server (WebSocket communication)
 - LangChain (AI orchestration)
 - ChromaDB (vector embeddings)
 - PyMuPDF (PDF text extraction)
 - OpenRouter API (AI responses)
-- SQLite (chat history storage)
+- PostgreSQL (chat history & metadata)
 
 **Development:**
 - UV Package Manager (faster than pip)
@@ -220,15 +235,28 @@ npm run preview                     # Preview production build
 - 💾 Chat history automatically persists to SQLite database
 - 🧹 **Clear localStorage**: If you see old test documents, open browser console and run `clearPDFPixieData()` to reset
 
-## 🐳 Docker Deployment
+## � Production Deployment
 
-```bash
-# Build and run with Docker Compose
-docker-compose up --build
+See the complete deployment guide: **[FLY_VERCEL_DEPLOYMENT.md](FLY_VERCEL_DEPLOYMENT.md)**
 
-# Or use development compose file
-docker-compose -f docker-compose.dev.yml up
+### Architecture
+
 ```
+┌─────────────────┐         ┌──────────────────┐
+│  Vercel (CDN)   │ ←─────→ │   Fly.io (API)   │
+│                 │         │                  │
+│  React Frontend │  HTTPS  │  FastAPI Backend │
+│  Global Edge    │         │  PostgreSQL DB   │
+│                 │         │  Persistent Vol. │
+└─────────────────┘         └──────────────────┘
+```
+
+**Benefits:**
+- ✅ 100% Free hosting
+- ✅ Global CDN (Vercel)
+- ✅ Persistent storage (Fly.io)
+- ✅ PostgreSQL included
+- ✅ Auto-deploy on git push
 
 ## 🤝 Contributing
 

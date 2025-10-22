@@ -26,11 +26,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for Vercel + Railway deployment
+# Configure CORS for Vercel + Fly.io deployment
 if IS_PRODUCTION:
     # Production CORS - allow Vercel frontend
     allowed_origins = [
-        "https://chatpdf-frontend.vercel.app",  # Replace with your Vercel URL
+        os.getenv("FRONTEND_URL", "https://chatpdf-frontend.vercel.app"),  # Your Vercel URL
         "https://*.vercel.app",  # Allow all Vercel preview deployments
         "http://localhost:3000",  # Local testing
         "http://localhost:5173",  # Vite dev server
@@ -51,7 +51,7 @@ app.add_middleware(
 if IS_PRODUCTION:
     # Production CORS for Socket.IO - allow Vercel frontend
     cors_origins = [
-        "https://chatpdf-frontend.vercel.app",  # Replace with your Vercel URL
+        os.getenv("FRONTEND_URL", "https://chatpdf-frontend.vercel.app"),  # Your Vercel URL
         "https://*.vercel.app",
     ]
 else:

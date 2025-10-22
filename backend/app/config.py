@@ -32,11 +32,11 @@ else:
 
 # Paths configuration
 if IS_PRODUCTION:
-    # Production paths - Railway provides persistent volumes
-    # Check if Railway volume is mounted
+    # Production paths - Fly.io/Railway provides persistent volumes
+    # Check if volume is mounted (both Fly.io and Railway use /data)
     if os.path.exists("/data"):
         DATA_DIR = Path("/data")
-        print("✅ Using Railway persistent volume at /data")
+        print("✅ Using persistent volume at /data (Fly.io/Railway)")
     else:
         # Fallback to /tmp but warn about data loss
         DATA_DIR = Path("/tmp/pdfpixie")

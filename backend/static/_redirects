@@ -1,3 +1,0 @@
-# This file is not needed for unified deployment
-# The FastAPI backend handles all routing including SPA routes
-# Keeping this file for reference only
