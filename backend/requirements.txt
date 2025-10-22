@@ -1,5 +1,5 @@
-# PDFPixie Requirements - Python 3.10+
-# Render deployment requirements
+# PDFPixie Requirements - Python 3.12+
+# Render + Supabase deployment requirements
 
 # Core FastAPI and server
 fastapi[all]==0.115.0
@@ -7,9 +7,9 @@ uvicorn[standard]==0.30.6
 python-multipart==0.0.12
 python-dotenv==1.0.1
 
-# Database
+# Database (Supabase PostgreSQL)
 sqlalchemy==2.0.23
-psycopg2-binary==2.9.9  # PostgreSQL adapter for Railway
+psycopg2-binary==2.9.9
 
 # Authentication (dev mode)
 python-jose[cryptography]==3.3.0
