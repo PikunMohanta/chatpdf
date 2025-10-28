@@ -17,6 +17,10 @@ services:
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pdfpixie_user} -d ${POSTGRES_DB:-pdfpixie}"]
       interval: 10s
@@ -39,6 +43,10 @@ services:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -91,6 +99,10 @@ services:
     volumes:
       - backend_data:/app/data
       - backend_logs:/app/logs
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     depends_on:
       postgres:
         condition: service_healthy
@@ -122,6 +134,10 @@ services:
       - "${FRONTEND_PORT:-80}:80"
     environment:
       - BACKEND_URL=http://backend:8000
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     depends_on:
       backend:
         condition: service_healthy
@@ -159,6 +175,10 @@ services:
     volumes:
       - backend_data:/app/data
       - backend_logs:/app/logs
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     depends_on:
       postgres:
         condition: service_healthy

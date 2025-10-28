@@ -6,10 +6,10 @@ import 'react-pdf/dist/Page/AnnotationLayer.css'
 import 'react-pdf/dist/Page/TextLayer.css'
 import './PdfViewer.css'
 
-// Configure PDF.js worker
-// Using unpkg CDN which is more reliable for pdfjs-dist
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`
-console.log(`✅ PDF.js worker configured: v${pdfjs.version}`)
+// Configure PDF.js worker - Use local worker file instead of CDN
+// This avoids CORS and network issues with external CDN
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
+console.log(`✅ PDF.js worker configured: v${pdfjs.version} (using local worker file)`)
 
 interface PdfViewerProps {
   documentId: string
