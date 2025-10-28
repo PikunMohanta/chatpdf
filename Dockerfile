@@ -46,53 +46,10 @@ COPY backend/ ./
 COPY --from=frontend-builder /app/frontend/dist /var/www/html
 COPY frontend/public/pdf.worker.min.js /var/www/html/
 
-# Create Nginx config
-RUN cat > /etc/nginx/sites-available/default <<'NGINX'
-server {
-    listen 80;
-    root /var/www/html;
-    client_max_body_size 50M;
-    gzip on;
-    gzip_types text/css application/javascript;
-    
-    location / { try_files $uri /index.html; }
-    location /api/ { 
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_buffering off;
-    }
-    location ~ ^/(upload|health|pdf) { 
-        proxy_pass http://127.0.0.1:8000;
-    }
-    location /socket.io/ {
-        proxy_pass http://127.0.0.1:8000/socket.io/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_buffering off;
-        proxy_read_timeout 86400;
-    }
-}
-NGINX
-
-# Create Supervisor config
-RUN cat > /etc/supervisor/conf.d/pdfpixie.conf <<'SUPER'
-[supervisord]
-nodaemon=true
-
-[program:nginx]
-command=/usr/sbin/nginx -g "daemon off;"
-stdout_logfile=/dev/fd/1
-stdout_logfile_maxbytes=0
-redirect_stderr=true
-
-[program:fastapi]
-command=uvicorn main:socket_app --host 0.0.0.0 --port 8000
-directory=/app
-stdout_logfile=/dev/fd/1
-stdout_logfile_maxbytes=0
-redirect_stderr=true
-SUPER
+ # Copy external Nginx & Supervisor configs
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY nginx/conf.d/pdfpixie.conf /etc/nginx/conf.d/pdfpixie.conf
+COPY supervisor/supervisord.conf /etc/supervisor/supervisord.conf
 
 # Setup directories
 RUN mkdir -p /app/data/{chromadb,uploads,chat_history} /app/logs && \
