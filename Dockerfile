@@ -30,7 +30,6 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
         nginx-light \
-        supervisor \
         ca-certificates && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean
@@ -75,24 +74,24 @@ server {
 }
 NGINX
 
-# Create Supervisor config
-RUN cat > /etc/supervisor/conf.d/pdfpixie.conf <<'SUPER'
-[supervisord]
-nodaemon=true
+# Create startup script (replaces supervisor)
+RUN cat > /app/start.sh <<'STARTSH'
+#!/bin/bash
+set -e
 
-[program:nginx]
-command=/usr/sbin/nginx -g "daemon off;"
-stdout_logfile=/dev/fd/1
-stdout_logfile_maxbytes=0
-redirect_stderr=true
+echo "Starting PDFPixie services..."
 
-[program:fastapi]
-command=uvicorn main:socket_app --host 0.0.0.0 --port 8000
-directory=/app
-stdout_logfile=/dev/fd/1
-stdout_logfile_maxbytes=0
-redirect_stderr=true
-SUPER
+# Start Nginx in background
+echo "Starting Nginx..."
+nginx &
+
+# Start FastAPI (this runs in foreground)
+echo "Starting FastAPI..."
+cd /app
+exec uvicorn main:socket_app --host 0.0.0.0 --port 8000 --workers 1
+STARTSH
+
+RUN chmod +x /app/start.sh
 
 # Setup directories
 RUN mkdir -p /app/data/{chromadb,uploads,chat_history} /app/logs && \
@@ -103,4 +102,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
 
 EXPOSE 80 8000
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+CMD ["/app/start.sh"]
