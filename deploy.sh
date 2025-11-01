@@ -16,6 +16,30 @@ if [ ! -f /.dockerenv ] && [ -z "$AWS_EXECUTION_ENV" ]; then
     fi
 fi
 
+# Check for required tools
+echo "🔍 Checking required tools..."
+if ! command -v docker &> /dev/null; then
+    echo "❌ Error: Docker is not installed"
+    echo "Install with: sudo apt install -y docker.io"
+    exit 1
+fi
+
+if ! command -v node &> /dev/null; then
+    echo "❌ Error: Node.js is not installed"
+    echo "Install with:"
+    echo "  curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -"
+    echo "  sudo apt install -y nodejs"
+    exit 1
+fi
+
+if ! command -v npm &> /dev/null; then
+    echo "❌ Error: npm is not installed"
+    echo "Install with: sudo apt install -y nodejs"
+    exit 1
+fi
+echo "✅ All required tools are installed"
+echo ""
+
 # Check for OPENROUTER_API_KEY
 if [ -z "$OPENROUTER_API_KEY" ]; then
     echo "❌ Error: OPENROUTER_API_KEY environment variable not set"
@@ -30,6 +54,13 @@ if [ ! -f ".env.production" ]; then
     echo "❌ Error: frontend/.env.production not found"
     exit 1
 fi
+
+# Install dependencies if node_modules doesn't exist
+if [ ! -d "node_modules" ]; then
+    echo "📥 Installing frontend dependencies..."
+    npm install
+fi
+
 npm run build
 cd ..
 echo "✅ Frontend built successfully"
