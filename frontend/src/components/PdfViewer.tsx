@@ -39,11 +39,12 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
         setLoading(true)
         setError(null)
 
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
         console.log(`🔍 Attempting to load PDF with document ID: ${documentId}`)
-        console.log(`📍 Request URL: http://localhost:8000/api/pdf/${documentId}`)
+        console.log(`📍 Request URL: ${apiUrl}/api/pdf/${documentId}`)
 
         const response = await axios.get(
-          `http://localhost:8000/api/pdf/${documentId}`,
+          `${apiUrl}/api/pdf/${documentId}`,
           {
             headers: {
               Authorization: 'Bearer dev-token',

@@ -28,8 +28,9 @@ const UploadScreen = ({ onUploadSuccess }: UploadScreenProps) => {
     formData.append('file', file)
 
     try {
+      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
       const response = await axios.post<DocumentInfo>(
-        'http://localhost:8000/api/upload',
+        `${apiUrl}/api/upload`,
         formData,
         {
           headers: {

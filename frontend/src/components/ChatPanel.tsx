@@ -87,8 +87,9 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
       }
 
       try {
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
         console.log('📥 Attempting to load chat history for session:', sessionId)
-        const response = await fetch(`http://localhost:8000/api/chat/history/${sessionId}`)
+        const response = await fetch(`${apiUrl}/api/chat/history/${sessionId}`)
         
         console.log('📡 History API response status:', response.status)
         
@@ -130,9 +131,10 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
   }, [sessionId, documentId])
 
   useEffect(() => {
-    console.log('🔌 Initializing Socket.IO connection to http://localhost:8000')
+    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:8000'
+    console.log('🔌 Initializing Socket.IO connection to', wsUrl)
     
-    const newSocket = io('http://localhost:8000', {
+    const newSocket = io(wsUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
