@@ -134,7 +134,12 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
   }, [sessionId, documentId])
 
   useEffect(() => {
-    const wsUrl = import.meta.env.VITE_WS_URL || 'http://localhost:8000'
+    // Use same origin when in production (served by Nginx on port 80)
+    // In development, use localhost:8000
+    const wsUrl = import.meta.env.MODE === 'production' 
+      ? window.location.origin 
+      : (import.meta.env.VITE_WS_URL || 'http://localhost:8000')
+    
     console.log('🔌 Initializing Socket.IO connection to', wsUrl)
     
     const newSocket = io(wsUrl, {
