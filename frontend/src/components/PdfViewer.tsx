@@ -39,7 +39,10 @@ const PdfViewer = ({ documentId, filename, highlightedPage, onHidePdf }: PdfView
         setLoading(true)
         setError(null)
 
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+        // Use same origin when in production (served by Nginx on port 80)
+        const apiUrl = import.meta.env.MODE === 'production' 
+          ? window.location.origin 
+          : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
         console.log(`🔍 Attempting to load PDF with document ID: ${documentId}`)
         console.log(`📍 Request URL: ${apiUrl}/api/pdf/${documentId}`)
 

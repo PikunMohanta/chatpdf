@@ -179,7 +179,14 @@ const ChatWorkspace = ({
     formData.append('file', file)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+      // Use same origin when in production (served by Nginx on port 80)
+      // In development, use localhost:8000
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? window.location.origin 
+        : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+      
+      console.log('[Upload] Starting PDF upload:', file.name, 'to', `${apiUrl}/api/upload`)
+      
       const response = await fetch(`${apiUrl}/api/upload`, {
         method: 'POST',
         headers: {
@@ -188,8 +195,12 @@ const ChatWorkspace = ({
         body: formData
       })
 
+      console.log('[Upload] Response status:', response.status, response.statusText)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('[Upload] Success! Document ID:', data.document_id)
+        
         const newSession: ChatSession = {
           session_id: `temp_${Date.now()}`,
           document_id: data.document_id,
@@ -205,11 +216,13 @@ const ChatWorkspace = ({
         onSelectSession(newSession)
         navigate('/chat')
       } else {
-        alert('Upload failed. Please try again.')
+        const errorText = await response.text()
+        console.error('[Upload] Upload failed:', response.status, errorText)
+        alert(`Upload failed (${response.status}): ${errorText}. Please try again.`)
       }
     } catch (error) {
-      console.error('Upload error:', error)
-      alert('Upload failed. Please try again.')
+      console.error('[Upload] Upload error:', error)
+      alert(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`)
     } finally {
       setUploadingFile(false)
     }

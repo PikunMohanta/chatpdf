@@ -28,7 +28,10 @@ const UploadScreen = ({ onUploadSuccess }: UploadScreenProps) => {
     formData.append('file', file)
 
     try {
-      const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+      // Use same origin when in production (served by Nginx on port 80)
+      const apiUrl = import.meta.env.MODE === 'production' 
+        ? window.location.origin 
+        : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
       const response = await axios.post<DocumentInfo>(
         `${apiUrl}/api/upload`,
         formData,

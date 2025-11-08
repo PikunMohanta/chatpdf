@@ -41,7 +41,11 @@ function App() {
     // Load chat sessions from backend API first, then fallback to localStorage
     const loadChatSessions = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+        // Use same origin when in production (served by Nginx on port 80)
+        const apiUrl = import.meta.env.MODE === 'production' 
+          ? window.location.origin 
+          : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+        
         console.log('🔄 Loading chat sessions from backend...')
         const response = await fetch(`${apiUrl}/api/chat/sessions/all`, {
           headers: {
@@ -102,7 +106,11 @@ function App() {
             // Load test document immediately
             const loadTestDocument = async () => {
               try {
-                const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+                // Use same origin when in production (served by Nginx on port 80)
+                const apiUrl = import.meta.env.MODE === 'production' 
+                  ? window.location.origin 
+                  : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+                
                 const response = await fetch(`${apiUrl}/api/debug/test-document`, {
                   headers: {
                     'Authorization': 'Bearer dev-token'

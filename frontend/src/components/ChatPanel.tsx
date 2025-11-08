@@ -87,7 +87,10 @@ const ChatPanel = ({ documentId, documentName, chatName, sessionId, onSourceClic
       }
 
       try {
-        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+        // Use same origin when in production (served by Nginx on port 80)
+        const apiUrl = import.meta.env.MODE === 'production' 
+          ? window.location.origin 
+          : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
         console.log('📥 Attempting to load chat history for session:', sessionId)
         const response = await fetch(`${apiUrl}/api/chat/history/${sessionId}`)
         
