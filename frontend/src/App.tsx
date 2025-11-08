@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import './App.css'
+import { getDeviceId } from './utils/deviceId'
 
 // Lazy load heavy components
 const ChatWorkspace = lazy(() => import('./components/ChatWorkspace'))
@@ -46,10 +47,13 @@ function App() {
           ? window.location.origin 
           : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
         
-        console.log('🔄 Loading chat sessions from backend...')
+        // Get device ID to match chat sessions
+        const deviceId = getDeviceId()
+        
+        console.log('🔄 Loading chat sessions from backend for device:', deviceId)
         const response = await fetch(`${apiUrl}/api/chat/sessions/all`, {
           headers: {
-            'Authorization': 'Bearer dev-token'
+            'Authorization': `Bearer ${deviceId}`
           }
         })
         

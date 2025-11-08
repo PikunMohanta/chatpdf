@@ -7,6 +7,7 @@ import logging
 from datetime import datetime
 import asyncio
 import os
+import uuid
 
 # Optional imports for production use
 try:
@@ -229,6 +230,9 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
     Uses OpenRouter when available, falls back to mock responses only when needed
     Returns: (response_text, sources_list, search_mode)
     """
+    search_mode = "keyword"  # Initialize at function level
+    sources = []  # Initialize at function level
+    
     try:
         # If we have OpenRouter available, use it even with mock embeddings
         if LLM_ENABLED:
@@ -236,8 +240,6 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
             
             # Try to get document context (from mock or real embeddings)
             context = ""
-            sources = []
-            search_mode = "keyword"  # Default to keyword search
             
             try:
                 # Always try mock embeddings first when real embeddings aren't available
@@ -245,6 +247,7 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
                 
                 # Check if we have real embeddings configured
                 try:
+                    import os
                     from dotenv import load_dotenv
                     load_dotenv()
                     openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
@@ -373,12 +376,11 @@ async def generate_ai_response(question: str, document_id: str) -> tuple[str, Li
         
         # Fallback to mock response only if OpenRouter is not available
         logger.info(f"Using mock response for question: {question[:50]}...")
-        return f"Mock response: I would analyze the document to answer '{question}' but OpenRouter is not configured. This is a development response.", ["Mock source: Please configure OpenRouter API key for AI responses"]
+        return f"Mock response: I would analyze the document to answer '{question}' but OpenRouter is not configured. This is a development response.", [{"page": 1, "text": "Mock source: Please configure OpenRouter API key for AI responses"}], "mock"
         
     except Exception as e:
-        logger.error(f"Error generating AI response: {e}")
-        return f"I encountered an error: {str(e)}", []
-        return "I'm sorry, I encountered an error while processing your question.", []
+        logger.error(f"Error generating AI response: {e}", exc_info=True)
+        return f"I encountered an error: {str(e)}", [], "error"
 
 @router.post("/query", response_model=ChatResponse)
 async def chat_query(

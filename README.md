@@ -270,66 +270,160 @@ docker rm pdfpixie-app
 
 ---
 
-## ☁️ AWS EC2 Deployment
+## ☁️ AWS EC2 Deployment with DuckDNS
 
-### Complete EC2 Deployment Guide
+### 📚 Complete Deployment Guides
 
-For detailed step-by-step instructions, see: **[EC2_SINGLE_INSTANCE_DOCKER_DEPLOYMENT.md](./EC2_SINGLE_INSTANCE_DOCKER_DEPLOYMENT.md)**
+- **[EC2 Deployment Guide](./docs/EC2_DEPLOYMENT_GUIDE.md)** - Complete step-by-step EC2 deployment with DuckDNS domain
+- **[Quick Deploy Guide](./docs/QUICK_DEPLOY.md)** - Get started in 5 minutes
 
-### Quick EC2 Setup
+### 🚀 Quick EC2 Deployment
 
-**1. Launch EC2 Instance:**
-- Instance Type: t3.micro (free tier) or t3.small (recommended)
-- AMI: Ubuntu 24.04 LTS
-- Security Groups: Open ports 22 (SSH), 80 (HTTP), 443 (HTTPS)
-- Storage: 30GB EBS volume
+**Prerequisites:**
+- AWS account with EC2 access
+- DuckDNS account (free at https://www.duckdns.org/)
+- OpenRouter API key ([Get one here](https://openrouter.ai/))
 
-**2. SSH to EC2 and install Docker:**
+**1. Setup DuckDNS Domain**
 ```bash
-ssh -i your-key.pem ubuntu@your-ec2-ip
+# Visit https://www.duckdns.org/
+# Sign in and create a subdomain (e.g., mypdfapp)
+# Save your DuckDNS token!
+```
 
-# Install Docker
-sudo apt update
-sudo apt install -y docker.io docker-compose
+**2. Launch EC2 Instance**
+- **Instance Type**: t3.small (2GB RAM recommended) or t3.micro (1GB budget option)
+- **AMI**: Ubuntu 22.04 LTS
+- **Security Groups**: Open ports 22 (SSH), 80 (HTTP), 443 (HTTPS optional)
+- **Storage**: 20GB gp3
+
+**3. Install Docker & Deploy**
+```bash
+# SSH to EC2
+ssh -i your-key.pem ubuntu@YOUR_EC2_IP
+
+# Install Docker (quick)
+curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker ubuntu
-newgrp docker
+
+# Install Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Log out and back in
+exit
 ```
 
-**3. Clone and deploy:**
+**4. Clone & Configure**
 ```bash
-git clone https://github.com/yourusername/chatpdf.git
+# Reconnect and clone repo
+ssh -i your-key.pem ubuntu@YOUR_EC2_IP
+git clone https://github.com/PikunMohanta/chatpdf.git
 cd chatpdf
+git checkout docker-deployment
 
-# Build image
-docker build -t pdfpixie:latest .
+# Setup environment
+cp .env.production .env
+nano .env
+# Update: OPENROUTER_API_KEY, DOMAIN_NAME, POSTGRES_PASSWORD
 
-# Run container
-docker run -d \
-  --name pdfpixie-app \
-  --dns 8.8.8.8 \
-  --dns 8.8.4.4 \
-  -p 80:80 \
-  -p 8000:8000 \
-  -e OPENROUTER_API_KEY=your_api_key_here \
-  pdfpixie:latest
+# Configure DuckDNS
+nano update-duckdns.sh
+# Set: DUCKDNS_DOMAIN="your-subdomain" and DUCKDNS_TOKEN="your-token"
+chmod +x update-duckdns.sh
+./update-duckdns.sh
 ```
 
-**4. Access via EC2 public IP:**
-```
-http://your-ec2-ip
+**5. Deploy!**
+```bash
+# Build and start
+docker-compose build
+docker-compose up -d
+
+# Verify deployment
+./verify-deployment.sh
+
+# Check status
+docker-compose ps
 ```
 
-### Cost Estimate
-- **Free Tier (12 months)**: $0/month
-- **After Free Tier**: ~$20-30/month (t3.small + 30GB storage)
+**6. Access Your App**
+```
+http://your-subdomain.duckdns.org
+```
 
-### SSL Certificate (Optional)
+### 🔐 Enable HTTPS (Optional - Recommended for Production)
+
 ```bash
 # Install Certbot
-sudo apt install -y certbot python3-certbot-nginx
+sudo apt-get install -y certbot
 
-# Get SSL certificate (requires domain)
-sudo certbot --nginx -d yourdomain.com
+# Stop containers
+docker-compose down
+
+# Get SSL certificate
+sudo certbot certonly --standalone \
+    -d your-subdomain.duckdns.org \
+    --email your-email@example.com \
+    --agree-tos
+
+# Update Dockerfile to use SSL config
+nano Dockerfile
+# Change: COPY nginx.conf -> COPY nginx-ssl.conf
+
+# Update domain in SSL config
+sed -i 's/your-subdomain.duckdns.org/YOUR_ACTUAL_DOMAIN/g' nginx-ssl.conf
+
+# Add SSL certificate volumes to docker-compose.yml
+nano docker-compose.yml
+# Add under app service:
+#   ports:
+#     - "443:443"
+#   volumes:
+#     - /etc/letsencrypt:/etc/letsencrypt:ro
+
+# Rebuild with HTTPS
+docker-compose build
+docker-compose up -d
+```
+
+Access at: `https://your-subdomain.duckdns.org` 🎉
+
+### 💰 Cost Estimate
+
+| Component | Specification | Monthly Cost |
+|-----------|---------------|--------------|
+| EC2 Instance | t3.small (2GB RAM) | $15-18 USD |
+| EBS Storage | 20GB gp3 | $2 USD |
+| Data Transfer | <1TB | Free tier |
+| DuckDNS Domain | Free subdomain | $0 |
+| SSL Certificate | Let's Encrypt | $0 |
+| **Total** | | **~$17-20/month** |
+
+**Budget Option**: t3.micro (1GB RAM) may be free tier eligible for first 12 months, then ~$8-10/month
+
+### 🛠️ Useful Commands
+
+```bash
+# View logs
+docker-compose logs -f app
+
+# Restart services
+docker-compose restart
+
+# Update application
+git pull origin docker-deployment
+docker-compose build
+docker-compose up -d
+
+# Backup database
+docker-compose exec postgres pg_dump -U pdfpixie_user pdfpixie > backup.sql
+
+# Check health
+curl http://localhost/health
+
+# Update DuckDNS IP (if EC2 IP changes)
+./update-duckdns.sh
 ```
 
 ---

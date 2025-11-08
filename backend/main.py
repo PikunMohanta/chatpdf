@@ -146,9 +146,10 @@ async def query(sid, data):
         document_id = data.get('document_id')
         query_text = data.get('query')
         session_id = data.get('session_id')
-        user_id = data.get('user_id', 'anonymous')  # Get user_id from client
+        user_id = data.get('user_id', 'anonymous')  # Legacy support
+        device_id = data.get('device_id', user_id)  # NEW: Use device_id for isolation
         
-        logger.info(f"📥 Received query from {sid}: {query_text[:50] if query_text else 'None'}... for document {document_id}, session {session_id}, user {user_id}")
+        logger.info(f"📥 Received query from {sid}: {query_text[:50] if query_text else 'None'}... for document {document_id}, session {session_id}, device {device_id}")
         
         if not query_text or not document_id:
             logger.warning(f"Missing data - query: {bool(query_text)}, document_id: {bool(document_id)}")
@@ -166,15 +167,15 @@ async def query(sid, data):
         from app.chat_history_db import chat_history_manager, ChatMessage
         import uuid
         
-        # Get or create chat session
+        # Get or create chat session (using device_id instead of user_id)
         session = None
         if session_id:
             session = chat_history_manager.get_session(session_id)
         
         if not session:
-            # Create new session for this document and user
-            logger.info(f"Creating new chat session for document {document_id}, user {user_id}")
-            session = chat_history_manager.create_session(document_id, user_id)
+            # Create new session for this document and device
+            logger.info(f"Creating new chat session for document {document_id}, device {device_id}")
+            session = chat_history_manager.create_session(document_id, device_id)
             session_id = session.session_id
         
         # Save user message to history
@@ -194,7 +195,7 @@ async def query(sid, data):
         logger.info(f"🤖 Generating AI response for document {document_id}...")
         response_text, sources, search_mode = await generate_ai_response(query_text, document_id)
         
-        logger.info(f"✅ Generated response for {sid}: {response_text[:100] if response_text else 'Empty'}...")
+        logger.info(f"✅ Generated response for {sid}: {response_text[:100] if response_text else 'Empty'}... (mode: {search_mode})")
         
         # Save AI response to history
         ai_message = ChatMessage(

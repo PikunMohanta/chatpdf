@@ -58,15 +58,34 @@ server {
     gzip on;
     gzip_types text/css application/javascript;
     
+    # Serve pdf.worker.min.js as static file
+    location = /pdf.worker.min.js {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        types { application/javascript js; }
+    }
+    
+    # Serve other static files
     location / { try_files $uri /index.html; }
+    
+    # API endpoints
     location /api/ { 
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_buffering off;
     }
-    location ~ ^/(upload|health|pdf) { 
+    
+    # Backend routes (but NOT /pdf.worker.min.js)
+    location ~ ^/(upload|health) { 
         proxy_pass http://127.0.0.1:8000;
     }
+    
+    # PDF serving from backend
+    location /api/pdf/ {
+        proxy_pass http://127.0.0.1:8000;
+    }
+    
+    # Socket.IO WebSocket
     location /socket.io/ {
         proxy_pass http://127.0.0.1:8000/socket.io/;
         proxy_http_version 1.1;

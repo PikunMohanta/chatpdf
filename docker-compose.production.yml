@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: pdfpixie-app
+    ports:
+      - "80:80"
+      - "8000:8000"
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://pdfpixie_user:pdfpixie_dev_password@postgres:5432/pdfpixie}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DEBUG=${DEBUG:-false}
+      - IS_PRODUCTION=${IS_PRODUCTION:-true}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./backend/data:/app/data
+      - app-logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: pdfpixie-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-pdfpixie_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pdfpixie_dev_password}
+      - POSTGRES_DB=${POSTGRES_DB:-pdfpixie}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pdfpixie_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: pdfpixie-redis
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  app-logs:
+    driver: local

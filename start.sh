@@ -1,58 +1,42 @@
 #!/bin/bash
+# PDFPixie Startup Script for Docker
+# Runs Nginx and FastAPI together
+
 set -e
 
-echo "================================================"
-echo "🚀 Starting PDFPixie services..."
-echo "================================================"
+echo "========================================"
+echo "PDFPixie Starting..."
+echo "========================================"
 
-# Create required directories
-echo "📁 Creating required directories..."
-mkdir -p /app/data/chromadb /app/data/uploads /app/data/chat_history /app/data/database /app/logs
-chmod -R 755 /app/data /app/logs
-echo "✅ Directories created"
+# Ensure data directories exist with proper permissions
+echo "Creating data directories..."
+mkdir -p /app/data/chromadb
+mkdir -p /app/data/uploads
+mkdir -p /app/data/chat_history
+mkdir -p /app/data/database
+mkdir -p /app/data/mock_embeddings
+mkdir -p /app/logs
 
-# Test Python imports
-echo "🐍 Testing Python environment..."
-cd /app
-python3 -c "import fastapi, socketio, uvicorn; print('✅ Core dependencies OK')" || {
-    echo "❌ Failed to import core dependencies"
-    exit 1
-}
+chmod -R 755 /app/data
+chmod -R 755 /app/logs
 
-# Test database initialization
-echo "💾 Testing database initialization..."
-python3 -c "from app.database import init_db; init_db(); print('✅ Database initialized')" || {
-    echo "❌ Failed to initialize database"
-    exit 1
-}
-
-# Check environment variables
-echo "🔑 Checking environment variables..."
-if [ -z "$OPENROUTER_API_KEY" ]; then
-    echo "⚠️  WARNING: OPENROUTER_API_KEY not set"
-fi
-echo "   DATABASE_URL: ${DATABASE_URL:-not set}"
-echo "   REDIS_URL: ${REDIS_URL:-not set}"
-echo "   ENVIRONMENT: ${ENVIRONMENT:-not set}"
+echo "Data directories ready"
 
 # Start Nginx in background
-echo "🌐 Starting Nginx..."
-nginx -t && nginx || {
-    echo "❌ Nginx failed to start"
-    cat /var/log/nginx/error.log
-    exit 1
-}
-echo "✅ Nginx started on port 80"
+echo "Starting Nginx..."
+nginx -g 'daemon off;' &
+NGINX_PID=$!
+echo "Nginx started (PID: $NGINX_PID)"
 
-# Give Nginx a moment to start
+# Wait a moment for Nginx to start
 sleep 2
 
-# Test Nginx
-echo "🧪 Testing Nginx..."
-curl -sf http://localhost:80/ > /dev/null && echo "✅ Nginx responding" || echo "⚠️  Nginx not responding yet"
-
-# Start FastAPI (this runs in foreground)
-echo "🚀 Starting FastAPI on port 8000..."
-echo "================================================"
+# Start FastAPI with uvicorn
+echo "Starting FastAPI backend..."
 cd /app
-exec uvicorn main:socket_app --host 0.0.0.0 --port 8000 --workers 1 --log-level info
+exec uvicorn main:socket_app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --log-level info \
+    --access-log \
+    --use-colors

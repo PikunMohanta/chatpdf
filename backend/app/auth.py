@@ -72,11 +72,21 @@ def generate_user_id_from_request(request: Request) -> str:
 # JWT validation function
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security), request: Request = None) -> UserInfo:
     """
-    Verify JWT token from AWS Cognito
+    Verify JWT token from AWS Cognito or accept device_id for development
     """
     token = credentials.credentials
     
     try:
+        # For development - accept device_id tokens (format: device_*)
+        if token.startswith("device_"):
+            # Use the device_id directly as user_id
+            return UserInfo(
+                user_id=token,  # Use device_id as user_id
+                email=f"{token}@device.local",
+                role="user",
+                session_id=token
+            )
+        
         # For development - create unique user ID per browser session
         if token == "dev-token":
             # Generate unique user ID based on client information
