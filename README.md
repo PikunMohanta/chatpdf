@@ -2,7 +2,7 @@
 
 Chat with your PDFs using AI. Upload any document, ask questions, and get instant answers powered by semantic search and real-time AI responses.
 
-**Live Demo:** http://pdfpixie.duckdns.org
+**Live Demo:** https://pdfpixie.duckdns.org
 
 ## What's Inside
 
@@ -69,13 +69,6 @@ npm run dev
 Visit http://localhost:5173 and you're good to go!
 
 ## Deploying to AWS
-
-Want to host this online? We've got you covered with complete guides:
-
-- **[Full EC2 Setup Guide](./docs/EC2_DEPLOYMENT_GUIDE.md)** - Everything you need to know
-- **[Quick Deploy](./docs/QUICK_DEPLOY.md)** - Get up and running in 5 minutes
-
-**The short version:**
 1. Spin up an AWS EC2 instance (t3.small recommended)
 2. Get a free domain from DuckDNS
 3. Clone the repo and run `docker-compose up -d`
@@ -147,19 +140,13 @@ Ports 80 and 8000 need to be free. Also make sure your `.env` file has the API k
 **Database errors?**  
 Run `docker-compose ps` to check if PostgreSQL is running. If not, try `docker-compose restart`.
 
-For more detailed help, check out the [deployment guide](./docs/EC2_DEPLOYMENT_GUIDE.md).
-
 ## Contributing
 
 Found a bug? Have an idea? Pull requests are welcome! Just fork the repo, make your changes, and submit a PR.
 
-## License
-
-MIT License - do whatever you want with this code.
-
 ## Links
 
-- **Try it live:** http://pdfpixie.duckdns.org
+- **Try it live:** https://pdfpixie.duckdns.org
 - **GitHub:** https://github.com/PikunMohanta/chatpdf
 - **Report issues:** https://github.com/PikunMohanta/chatpdf/issues
 
